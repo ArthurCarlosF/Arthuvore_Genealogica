@@ -2,232 +2,65 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="description" content="Instruções para cadastrar pessoas e gerar árvores genealógicas no Raízes.">
-  <title>Como funciona — Raízes</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Como funciona — Arthuvore Genealógica</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
+  <style>
+    .guide{padding:90px clamp(22px,8vw,120px)}.guide:nth-child(even){background:var(--cream)}
+    .guide-hero{min-height:480px;display:grid;align-content:center;background:linear-gradient(120deg,var(--paper),var(--cream))}
+    .guide-hero p{max-width:720px;color:var(--muted);font-size:18px}.guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .guide-card{padding:26px;background:white;border:1px solid var(--line);border-radius:18px}.guide-card span{color:var(--gold);font:38px "DM Serif Display"}
+    .guide-card h3{margin:12px 0 7px}.guide-card p{margin:0;color:var(--muted);font-size:14px}
+    .guide-steps{max-width:900px;margin:0;padding:0;list-style:none}.guide-steps li{padding:26px 0;display:grid;grid-template-columns:55px 1fr;gap:18px;border-bottom:1px solid var(--line)}
+    .guide-steps b{width:45px;height:45px;display:grid;place-items:center;color:white;background:var(--forest);border-radius:50%}.guide-steps h3{margin:2px 0 5px}.guide-steps p{margin:0;color:var(--muted)}
+    @media(max-width:800px){.guide-grid{grid-template-columns:1fr}.guide{padding:60px 20px}}
+  </style>
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="index.html" aria-label="Raízes, página inicial">
-      <span class="brand-mark" aria-hidden="true">R</span>
-      <span>Raízes</span>
-    </a>
-    <nav aria-label="Navegação principal">
-      <a href="index.html#buscar">Buscar</a>
-      <a href="index.html#cadastro">Cadastrar</a>
-      <a class="nav-current" href="instrucoes.html" aria-current="page">Como funciona</a>
-    </nav>
+    <a class="brand" href="index.html"><span class="brand-mark">A</span><span>Arthuvore <small>Genealógica</small></span></a>
+    <nav><a href="index.html">Página inicial</a><a class="button button-primary button-small" href="index.html">Entrar ou cadastrar</a></nav>
   </header>
-
-  <main class="guide-page">
-    <section class="guide-hero">
-      <div>
-        <p class="eyebrow">Guia de uso</p>
-        <h1>Construa sua árvore,<br><em>um cadastro por vez.</em></h1>
-        <p>O Raízes encontra parentes automaticamente comparando os documentos informados nos cadastros. Veja como registrar os dados corretamente e gerar sua árvore.</p>
-        <div class="hero-actions">
-          <a class="button button-primary" href="index.html#cadastro">Começar cadastro</a>
-          <a class="button button-secondary" href="#passo-a-passo">Ver passo a passo</a>
-        </div>
-      </div>
-      <aside class="guide-summary">
-        <span class="summary-number">3</span>
-        <div>
-          <strong>informações criam a conexão</strong>
-          <p>Documento da pessoa, documento do pai e documento da mãe.</p>
-        </div>
-      </aside>
+  <main>
+    <section class="guide guide-hero">
+      <p class="eyebrow">Como funciona</p>
+      <h1>Uma árvore feita de <em>conexões confirmadas.</em></h1>
+      <p>Você cria sua conta, encontra familiares já cadastrados e envia uma solicitação. A relação só aparece na árvore quando a outra pessoa aceita.</p>
+      <div class="hero-actions"><a class="button button-primary" href="index.html">Criar minha conta</a></div>
     </section>
-
-    <section class="guide-section" id="como-funciona">
-      <div class="guide-section-heading">
-        <p class="eyebrow">A lógica da árvore</p>
-        <h2>Como as pessoas são conectadas</h2>
-        <p>Cada pessoa possui seu próprio documento de identificação. No cadastro dos filhos, os documentos do pai e da mãe apontam para os respectivos cadastros.</p>
-      </div>
-
-      <div class="connection-example" aria-label="Exemplo de conexão familiar">
-        <article class="example-person">
-          <span class="example-role">Pai</span>
-          <strong>João Moreira</strong>
-          <small>Documento: 111</small>
-        </article>
-        <div class="example-line">
-          <span>O filho informa o documento 111</span>
-        </div>
-        <article class="example-person example-focus">
-          <span class="example-role">Filho</span>
-          <strong>Rafael Moreira</strong>
-          <small>Documento do pai: 111</small>
-        </article>
-      </div>
-
-      <div class="information-grid">
-        <article>
-          <span class="info-icon">01</span>
-          <h3>Conexão automática</h3>
-          <p>Quando o documento do pai ou da mãe coincide com um cadastro existente, o sistema cria a relação sem intervenção manual.</p>
-        </article>
-        <article>
-          <span class="info-icon">02</span>
-          <h3>Árvores separadas se unem</h3>
-          <p>Se dois grupos familiares estavam isolados, o cadastro de uma pessoa que conecte os dois grupos transforma tudo em uma árvore maior.</p>
-        </article>
-        <article>
-          <span class="info-icon">03</span>
-          <h3>Cadastros pendentes</h3>
-          <p>Um quadrado com interrogação mostra pais referenciados ainda sem cadastro ou quando nenhum filho consta na base.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="guide-section guide-steps-section" id="passo-a-passo">
-      <div class="guide-section-heading">
-        <p class="eyebrow">Cadastro</p>
-        <h2>Passo a passo</h2>
-        <p>Antes de começar, tenha os documentos dos pais em mãos, quando forem conhecidos.</p>
-      </div>
-
-      <ol class="steps-list">
-        <li>
-          <span class="step-number">1</span>
-          <div>
-            <h3>Acesse “Adicionar uma pessoa”</h3>
-            <p>Na página inicial, clique em <strong>Adicionar pessoa</strong> ou abra a seção <strong>Cadastrar</strong> no menu.</p>
-          </div>
-        </li>
-        <li>
-          <span class="step-number">2</span>
-          <div>
-            <h3>Escolha uma foto</h3>
-            <p>A foto é opcional. Use um arquivo JPG, PNG ou WebP com até 2 MB. Uma imagem nítida ajuda a reconhecer as pessoas na árvore.</p>
-          </div>
-        </li>
-        <li>
-          <span class="step-number">3</span>
-          <div>
-            <h3>Informe nome e nascimento</h3>
-            <p>Digite o nome completo e o ano de nascimento. Evite apelidos no campo de nome; eles podem dificultar a busca.</p>
-          </div>
-        </li>
-        <li>
-          <span class="step-number">4</span>
-          <div>
-            <h3>Informe o documento da pessoa</h3>
-            <p>O documento é o identificador único do cadastro. Ele não pode ser usado por duas pessoas diferentes.</p>
-          </div>
-        </li>
-        <li>
-          <span class="step-number">5</span>
-          <div>
-            <h3>Informe os documentos dos pais</h3>
-            <p>Preencha o documento do pai e o da mãe quando conhecidos. Eles podem ser informados mesmo que os pais ainda não estejam cadastrados.</p>
-            <div class="step-note"><strong>Importante:</strong> quando esses pais forem cadastrados usando os mesmos documentos, a conexão aparecerá automaticamente.</div>
-          </div>
-        </li>
-        <li>
-          <span class="step-number">6</span>
-          <div>
-            <h3>Cadastre e-mail e senha</h3>
-            <p>O e-mail será usado para notificações futuras. A senha protege a edição dos dados desta pessoa e deve possuir pelo menos oito caracteres.</p>
-          </div>
-        </li>
-        <li>
-          <span class="step-number">7</span>
-          <div>
-            <h3>Confirme a autorização</h3>
-            <p>Marque a declaração somente se você possui autorização para cadastrar os dados informados.</p>
-          </div>
-        </li>
-        <li>
-          <span class="step-number">8</span>
-          <div>
-            <h3>Salve o cadastro</h3>
-            <p>Clique em <strong>Salvar pessoa</strong>. O sistema atualizará as conexões e a pessoa ficará disponível na busca.</p>
-          </div>
-        </li>
+    <section class="guide">
+      <p class="eyebrow">Passo a passo</p>
+      <h2>Comece por você</h2>
+      <ol class="guide-steps">
+        <li><b>1</b><div><h3>Crie sua conta</h3><p>Informe nome completo, ano de nascimento, sexo, e-mail e uma senha segura.</p></div></li>
+        <li><b>2</b><div><h3>Abra sua árvore</h3><p>Ao entrar, você verá sua árvore pessoal e os atalhos para adicionar pai, mãe ou filho.</p></div></li>
+        <li><b>3</b><div><h3>Busque o familiar</h3><p>Pesquise por nome, ano de nascimento ou ambos. Foto e ano ajudam a diferenciar pessoas com nomes iguais.</p></div></li>
+        <li><b>4</b><div><h3>Envie uma solicitação</h3><p>Selecione a pessoa correta e confirme o parentesco que deseja propor.</p></div></li>
+        <li><b>5</b><div><h3>Aguarde a confirmação</h3><p>A outra pessoa poderá aceitar ou recusar. Nenhum vínculo é criado sem consentimento.</p></div></li>
+        <li><b>6</b><div><h3>Explore e exporte</h3><p>A árvore começa com três graus de distância. Você pode ampliar o filtro até seis graus e exportar em SVG.</p></div></li>
       </ol>
-
-      <div class="guide-cta">
-        <div>
-          <p class="eyebrow">Pronto para começar?</p>
-          <h2>Cadastre a primeira pessoa.</h2>
-        </div>
-        <a class="button button-primary" href="index.html#cadastro">Abrir cadastro</a>
+    </section>
+    <section class="guide">
+      <p class="eyebrow">Relações</p>
+      <h2>Quem atualiza qual informação?</h2>
+      <div class="guide-grid">
+        <article class="guide-card"><span>01</span><h3>Adicionar pai</h3><p>Você envia a solicitação. Quando ele aceita, o ID dele é adicionado ao campo de pai do seu perfil.</p></article>
+        <article class="guide-card"><span>02</span><h3>Adicionar mãe</h3><p>Você envia a solicitação. Quando ela aceita, o ID dela é adicionado ao campo de mãe do seu perfil.</p></article>
+        <article class="guide-card"><span>03</span><h3>Adicionar filho</h3><p>Ao aceitar, seu ID é adicionado ao perfil do filho como pai ou mãe, conforme o sexo cadastrado em sua conta.</p></article>
       </div>
     </section>
-
-    <section class="guide-section">
-      <div class="guide-section-heading">
-        <p class="eyebrow">Visualização</p>
-        <h2>Como gerar uma árvore</h2>
-      </div>
-      <div class="usage-cards">
-        <article>
-          <span>1</span>
-          <h3>Busque uma pessoa</h3>
-          <p>Digite nome, sobrenome ou documento na área de busca.</p>
-        </article>
-        <article>
-          <span>2</span>
-          <h3>Selecione “Ver árvore”</h3>
-          <p>A pessoa selecionada será o ponto central da consulta.</p>
-        </article>
-        <article>
-          <span>3</span>
-          <h3>Escolha os graus</h3>
-          <p>Defina quantos graus de relacionamento devem ser percorridos.</p>
-        </article>
-        <article>
-          <span>4</span>
-          <h3>Visualize ou exporte</h3>
-          <p>Navegue pelas conexões ou baixe o desenho no formato SVG.</p>
-        </article>
-      </div>
-    </section>
-
-    <section class="guide-section guide-faq">
-      <div class="guide-section-heading">
-        <p class="eyebrow">Dúvidas frequentes</p>
-        <h2>O que significam os resultados</h2>
-      </div>
-      <div class="faq-list">
-        <details open>
-          <summary>O que significa “pai” ou “mãe não cadastrado”?</summary>
-          <p>O documento desse pai ou dessa mãe foi informado por um filho, mas ainda não existe uma pessoa cadastrada com o mesmo documento.</p>
-        </details>
-        <details>
-          <summary>O que significa “filho não cadastrado”?</summary>
-          <p>Nenhuma pessoa atualmente cadastrada informou esse registro como pai ou mãe. Isso significa apenas que não há filho encontrado na base.</p>
-        </details>
-        <details>
-          <summary>Posso cadastrar alguém antes dos pais?</summary>
-          <p>Sim. Informe os documentos dos pais. A interrogação será substituída automaticamente quando os respectivos cadastros forem criados.</p>
-        </details>
-        <details>
-          <summary>Como corrijo uma informação?</summary>
-          <p>Localize a pessoa na busca, clique em <strong>Editar</strong> e informe a senha individual definida no cadastro. O administrador também pode usar a senha geral para corrigir qualquer registro.</p>
-        </details>
-        <details>
-          <summary>Quem pode ver os documentos?</summary>
-          <p>Na listagem pública, os documentos aparecem mascarados. O acesso e o tratamento dos dados completos dependem das regras de privacidade configuradas pelo responsável pelo sistema.</p>
-        </details>
+    <section class="guide">
+      <p class="eyebrow">Privacidade</p>
+      <h2>Informações usadas com cuidado</h2>
+      <div class="guide-grid">
+        <article class="guide-card"><h3>CPF não é obrigatório</h3><p>As conexões usam IDs internos automáticos, portanto não é necessário conhecer o documento dos familiares.</p></article>
+        <article class="guide-card"><h3>E-mail não aparece na busca</h3><p>Outros usuários encontram você por nome e ano de nascimento, sem acesso ao seu login.</p></article>
+        <article class="guide-card"><h3>Você controla os vínculos</h3><p>Solicitações recebidas podem ser aceitas ou recusadas dentro da sua conta.</p></article>
       </div>
     </section>
   </main>
-
-  <footer>
-    <a class="brand" href="index.html"><span class="brand-mark">R</span><span>Raízes</span></a>
-    <div class="footer-links">
-      <a href="index.html#buscar">Buscar</a>
-      <a href="index.html#cadastro">Cadastrar</a>
-      <a href="instrucoes.html">Como funciona</a>
-    </div>
-    <p>Feito para preservar histórias entre gerações.</p>
-  </footer>
 </body>
 </html>

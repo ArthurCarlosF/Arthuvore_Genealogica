@@ -1,67 +1,81 @@
-# Raízes
+# Arthuvore Genealógica
 
-MVP de uma plataforma colaborativa para cadastro, conexão, busca e visualização de árvores genealógicas.
+Rede genealógica colaborativa com contas individuais e relações familiares confirmadas.
 
-## O que já funciona
+## Funcionalidades
 
-- Cadastro de pessoa com nome, nascimento, documento, documentos dos pais, e-mail, senha e foto.
-- Conexão automática quando documentos coincidem.
-- Busca por nome, sobrenome ou documento.
-- Visualização por até 6 graus de relacionamento.
-- Indicação de pai ou mãe referenciado, mas ainda não cadastrado.
-- Indicação de “filho não cadastrado” quando nenhuma pessoa da base referencia alguém como pai ou mãe.
-- Edição protegida pela senha do registro.
-- Senha administrativa geral para editar qualquer cadastro.
-- Exportação da árvore em SVG.
-- Página de instruções com explicação do funcionamento e passo a passo do cadastro.
-- Modo demonstração local e integração com Google Sheets/Drive por Apps Script.
+- Cadastro e login por e-mail e senha.
+- ID interno automático para cada usuário.
+- Perfil com nome, ano de nascimento, sexo e foto.
+- Busca por nome e/ou ano de nascimento.
+- Solicitações para adicionar pai, mãe ou filho.
+- Vínculo criado somente depois do aceite.
+- Árvore com três graus por padrão e filtro de até seis graus.
+- Exportação em SVG.
+- Painel de solicitações recebidas e enviadas.
+- Modo local de demonstração enquanto o Firebase não estiver configurado.
 
-## Executar localmente
+No modo demonstração, use:
 
-Sirva a pasta com um servidor HTTP. Por exemplo:
-
-```powershell
-python -m http.server 4173
+```text
+E-mail: arthur@demo.com
+Senha: demo1234
 ```
 
-Abra `http://localhost:4173`. O modo demonstração vem ativado. A senha dos registros de exemplo é `demo1234`.
+## Configurar Firebase
 
-## Publicar no GitHub Pages
+1. Crie um projeto em [Firebase Console](https://console.firebase.google.com).
+2. Adicione um aplicativo Web.
+3. Ative **Authentication > Sign-in method > E-mail/senha**.
+4. Crie um banco **Cloud Firestore**.
+5. Copie a configuração pública do aplicativo para `firebase-config.js`.
+6. Publique o conteúdo de `firestore.rules` em **Firestore Database > Regras**.
+7. Em **Authentication > Settings > Authorized domains**, inclua:
 
-1. Crie um repositório no GitHub e envie estes arquivos.
-2. Em **Settings > Pages**, escolha **Deploy from a branch**.
-3. Selecione a branch `main` e a pasta `/ (root)`.
-4. Aguarde o endereço público ser criado.
+```text
+arthurcarlosf.github.io
+```
 
-Não coloque IDs de planilha, chaves ou outros segredos neste repositório.
+Depois de configurar `firebase-config.js`, o site detecta o Firebase automaticamente e deixa de usar o modo local.
 
-## Configurar o Google Apps Script
+## Administração
 
-1. Crie uma planilha Google vazia e copie o ID que aparece entre `/d/` e `/edit` na URL.
-2. Abra [script.google.com](https://script.google.com), crie um projeto e copie o conteúdo de `apps-script/Code.gs`.
-3. Em **Configurações do projeto > Propriedades do script**, crie:
-   - `SPREADSHEET_ID`: ID da planilha.
-   - `PASSWORD_PEPPER`: texto aleatório longo, secreto e único.
-   - `ADMIN_PASSWORD`: senha geral, forte e exclusiva, que permitirá editar qualquer cadastro.
-4. Em **Implantar > Nova implantação**, escolha **Aplicativo da Web**.
-5. Execute como você e permita acesso a qualquer pessoa.
-6. Autorize Planilhas e Drive e copie a URL terminada em `/exec`.
-7. A implantação atual já está configurada como API padrão do site. Use **Configurar API** somente para trocar o endereço ou ativar o modo demonstração.
+As regras reconhecem administradores pelo custom claim:
 
-O Apps Script criará a aba `Pessoas` e a pasta `Raizes - Fotos` automaticamente.
+```json
+{ "admin": true }
+```
 
-Cada pessoa pode editar somente seu próprio registro usando a senha individual definida no cadastro. A senha configurada em `ADMIN_PASSWORD` funciona em qualquer registro e não deve ser compartilhada ou incluída no código do site.
+Esse claim deve ser configurado em ambiente seguro com Firebase Admin SDK ou Cloud Functions. Nunca inclua credenciais administrativas no frontend.
 
-No modo demonstração, a senha dos registros de exemplo é `demo1234` e a senha administrativa de teste é `admin1234`. Essas senhas existem apenas no navegador e não são usadas pela API real.
+## Estrutura dos dados
 
-## Modelo e limitações
+### `users/{uid}`
 
-Cada pessoa é um vértice. Os campos `fatherDocument` e `motherDocument` criam as arestas. Isso permite que ilhas separadas sejam unidas automaticamente quando um documento intermediário é cadastrado.
+```json
+{
+  "fullName": "Nome da pessoa",
+  "birthYear": 1990,
+  "sex": "male",
+  "email": "email@example.com",
+  "photoUrl": "",
+  "fatherId": "",
+  "motherId": ""
+}
+```
 
-“Pai/mãe não cadastrado” significa que existe um documento de pai ou mãe informado, mas ainda sem cadastro correspondente. “Filho não cadastrado” é exibido quando nenhum registro da base referencia a pessoa como pai ou mãe. Essa segunda indicação significa apenas “nenhum filho encontrado na base”; ela não confirma que a pessoa tenha ou não filhos fora do sistema.
+### `relationshipRequests/{fromId_toId_relation}`
 
-## Antes de oferecer como serviço pago
+```json
+{
+  "fromId": "uid solicitante",
+  "toId": "uid destinatário",
+  "relation": "father",
+  "participants": ["uid1", "uid2"],
+  "status": "pending"
+}
+```
 
-Este MVP valida interface e modelo, mas Apps Script/Sheets não é uma infraestrutura adequada para uma base pública grande. Para comercialização, migre o backend para PostgreSQL ou um banco de grafos, use autenticação real, rate limiting, auditoria, backups, exclusão de conta e controles compatíveis com a LGPD.
+## Publicação
 
-CPF, e-mail, parentesco e fotografia são dados pessoais. Uma operação pública exige base legal, política de privacidade, consentimento verificável, canal para correção/exclusão e análise jurídica. Para produção, também é recomendável criptografar documentos no banco e manter um índice hash separado para busca exata.
+O frontend é estático e pode ser publicado pelo GitHub Pages a partir da branch `main`.
