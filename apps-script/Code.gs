@@ -74,8 +74,8 @@ function updatePerson(payload) {
     const index = rows.findIndex(row => row.id === payload.id);
     if (index < 0) throw new Error('Cadastro não encontrado.');
     const current = rows[index];
-    if (!safeEquals(current.passwordHash, hashPassword(payload.password, current.passwordSalt))) {
-      throw new Error('Senha incorreta.');
+    if (!canEditPerson(current, payload.password)) {
+      throw new Error('Senha individual ou administrativa incorreta.');
     }
 
     const document = normalizeDocument(payload.document);
@@ -107,7 +107,25 @@ function updatePerson(payload) {
 function verifyPassword(id, password) {
   const person = readRows().find(row => row.id === id);
   if (!person || !password) return false;
-  return safeEquals(person.passwordHash, hashPassword(password, person.passwordSalt));
+  return canEditPerson(person, password);
+}
+
+function canEditPerson(person, password) {
+  if (!password) return false;
+  const individualPasswordMatches = safeEquals(
+    person.passwordHash,
+    hashPassword(password, person.passwordSalt)
+  );
+  return individualPasswordMatches || isAdminPassword(password);
+}
+
+function isAdminPassword(password) {
+  const adminPassword = PropertiesService.getScriptProperties().getProperty('ADMIN_PASSWORD');
+  if (!adminPassword) return false;
+  return safeEquals(
+    hashPassword(password, 'ADMIN_PASSWORD'),
+    hashPassword(adminPassword, 'ADMIN_PASSWORD')
+  );
 }
 
 function getSheet() {

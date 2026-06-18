@@ -1,6 +1,7 @@
 const CONFIG_KEY = "raizes-config-v2";
 const DEMO_KEY = "raizes-demo-data-v1";
 const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbymXf-sR4HNeR2DegyGwEQ00LD3i-POnVsHnfcBl5eN4GkzgKzR4geDlpSB8PQx0tGh5A/exec";
+const DEMO_ADMIN_PASSWORD = "admin1234";
 
 const demoPeople = [
   { id: "1", fullName: "Rafael Moreira", birthYear: 1988, document: "11111111111", fatherDocument: "33333333333", motherDocument: "22222222222", email: "rafael@exemplo.com", photoUrl: "", passwordHash: "demo" },
@@ -139,12 +140,19 @@ function demoApi(action, payload) {
   }
   if (action === "verify") {
     const person = people.find((p) => p.id === payload.id);
-    return Boolean(person && (person.passwordHash === simpleHash(payload.password) || person.passwordHash === "demo" && payload.password === "demo1234"));
+    return Boolean(person && (
+      payload.password === DEMO_ADMIN_PASSWORD ||
+      person.passwordHash === simpleHash(payload.password) ||
+      person.passwordHash === "demo" && payload.password === "demo1234"
+    ));
   }
   if (action === "update") {
     const index = people.findIndex((p) => p.id === payload.id);
     if (index < 0) throw new Error("Cadastro não encontrado.");
-    if (!(people[index].passwordHash === simpleHash(payload.password) || people[index].passwordHash === "demo" && payload.password === "demo1234")) throw new Error("Senha incorreta.");
+    const authorized = payload.password === DEMO_ADMIN_PASSWORD ||
+      people[index].passwordHash === simpleHash(payload.password) ||
+      people[index].passwordHash === "demo" && payload.password === "demo1234";
+    if (!authorized) throw new Error("Senha individual ou administrativa incorreta.");
     const passwordHash = payload.newPassword ? simpleHash(payload.newPassword) : people[index].passwordHash;
     people[index] = {
       ...people[index],

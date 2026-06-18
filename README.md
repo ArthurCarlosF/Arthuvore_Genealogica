@@ -11,6 +11,7 @@ MVP de uma plataforma colaborativa para cadastro, conexão, busca e visualizaç�
 - Indicação de pai ou mãe referenciado, mas ainda não cadastrado.
 - Indicação de “filho não cadastrado” quando nenhuma pessoa da base referencia alguém como pai ou mãe.
 - Edição protegida pela senha do registro.
+- Senha administrativa geral para editar qualquer cadastro.
 - Exportação da árvore em SVG.
 - Página de instruções com explicação do funcionamento e passo a passo do cadastro.
 - Modo demonstração local e integração com Google Sheets/Drive por Apps Script.
@@ -41,12 +42,17 @@ Não coloque IDs de planilha, chaves ou outros segredos neste repositório.
 3. Em **Configurações do projeto > Propriedades do script**, crie:
    - `SPREADSHEET_ID`: ID da planilha.
    - `PASSWORD_PEPPER`: texto aleatório longo, secreto e único.
+   - `ADMIN_PASSWORD`: senha geral, forte e exclusiva, que permitirá editar qualquer cadastro.
 4. Em **Implantar > Nova implantação**, escolha **Aplicativo da Web**.
 5. Execute como você e permita acesso a qualquer pessoa.
 6. Autorize Planilhas e Drive e copie a URL terminada em `/exec`.
 7. A implantação atual já está configurada como API padrão do site. Use **Configurar API** somente para trocar o endereço ou ativar o modo demonstração.
 
 O Apps Script criará a aba `Pessoas` e a pasta `Raizes - Fotos` automaticamente.
+
+Cada pessoa pode editar somente seu próprio registro usando a senha individual definida no cadastro. A senha configurada em `ADMIN_PASSWORD` funciona em qualquer registro e não deve ser compartilhada ou incluída no código do site.
+
+No modo demonstração, a senha dos registros de exemplo é `demo1234` e a senha administrativa de teste é `admin1234`. Essas senhas existem apenas no navegador e não são usadas pela API real.
 
 ## Modelo e limitações
 
