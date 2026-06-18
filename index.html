@@ -184,6 +184,10 @@
       </div>
       <label class="field"><span>E-mail</span><input id="auth-email" type="email" required autocomplete="email"></label>
       <label class="field"><span>Senha</span><input id="auth-password" type="password" required minlength="8" autocomplete="current-password"></label>
+      <label class="field auth-register-fields hidden" id="auth-confirm-field">
+        <span>Confirmar senha</span>
+        <input id="auth-confirm-password" type="password" minlength="8" autocomplete="new-password">
+      </label>
       <button class="button button-primary full-width" id="auth-submit" type="submit">Entrar</button>
       <button class="auth-switch" id="auth-switch" type="button">Ainda não tenho conta</button>
       <p class="form-status" id="auth-status"></p>

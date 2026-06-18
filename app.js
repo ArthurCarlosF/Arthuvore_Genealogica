@@ -59,9 +59,11 @@ function openAuth(mode) {
   els.authForm.dataset.mode = mode;
   const register = mode === "register";
   $("#auth-register-fields").classList.toggle("hidden", !register);
+  $("#auth-confirm-field").classList.toggle("hidden", !register);
   $("#auth-name").required = register;
   $("#auth-year").required = register;
   $("#auth-sex").required = register;
+  $("#auth-confirm-password").required = register;
   $("#auth-password").autocomplete = register ? "new-password" : "current-password";
   $("#auth-eyebrow").textContent = register ? "Comece por você" : "Bem-vindo de volta";
   $("#auth-title").textContent = register ? "Criar nova conta" : "Entrar na conta";
@@ -76,6 +78,10 @@ async function submitAuth(event) {
   const mode = els.authForm.dataset.mode;
   const email = $("#auth-email").value.trim().toLowerCase();
   const password = $("#auth-password").value;
+  const confirmPassword = $("#auth-confirm-password").value;
+  if (mode === "register" && password !== confirmPassword) {
+    return setStatus(els.authStatus, "As senhas informadas não coincidem.", "error");
+  }
   setStatus(els.authStatus, mode === "register" ? "Criando conta..." : "Entrando...");
   try {
     const payload = mode === "register"
