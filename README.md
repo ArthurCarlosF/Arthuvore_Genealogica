@@ -13,69 +13,52 @@ Rede genealógica colaborativa com contas individuais e relações familiares co
 - Árvore com três graus por padrão e filtro de até seis graus.
 - Exportação em SVG.
 - Painel de solicitações recebidas e enviadas.
-- Modo local de demonstração enquanto o Firebase não estiver configurado.
 
-No modo demonstração, use:
+## Arquitetura
 
-```text
-E-mail: arthur@demo.com
-Senha: demo1234
-```
+- Frontend estático publicado no GitHub Pages.
+- API criada com Google Apps Script.
+- Google Sheets armazena usuários, solicitações e sessões.
+- Google Drive armazena fotos.
+- Senhas são armazenadas como hash com salt e pepper, nunca em texto puro.
+- Sessões utilizam tokens aleatórios com validade de 30 dias.
 
-## Configurar Firebase
+## Configurar o Apps Script
 
-1. Crie um projeto em [Firebase Console](https://console.firebase.google.com).
-2. Adicione um aplicativo Web.
-3. Ative **Authentication > Sign-in method > E-mail/senha**.
-4. Crie um banco **Cloud Firestore**.
-5. Copie a configuração pública do aplicativo para `firebase-config.js`.
-6. Publique o conteúdo de `firestore.rules` em **Firestore Database > Regras**.
-7. Em **Authentication > Settings > Authorized domains**, inclua:
+1. Abra o projeto em [script.google.com](https://script.google.com).
+2. Substitua o conteúdo de `Code.gs` pelo arquivo `apps-script/Code.gs`.
+3. Em **Configurações do projeto > Propriedades do script**, configure:
 
 ```text
-arthurcarlosf.github.io
+SPREADSHEET_ID = ID da planilha
+PASSWORD_PEPPER = texto secreto, longo e aleatório
 ```
 
-Depois de configurar `firebase-config.js`, o site detecta o Firebase automaticamente e deixa de usar o modo local.
+4. Em **Implantar > Gerenciar implantações**, edite o aplicativo Web.
+5. Selecione **Nova versão**.
+6. Configure:
 
-## Administração
+```text
+Executar como: você
+Quem pode acessar: qualquer pessoa
+```
 
-As regras reconhecem administradores pelo custom claim:
+7. Clique em **Implantar**.
+
+A URL `/exec` deve retornar:
 
 ```json
-{ "admin": true }
+{"ok":true,"data":{"service":"Arthuvore API","version":2}}
 ```
 
-Esse claim deve ser configurado em ambiente seguro com Firebase Admin SDK ou Cloud Functions. Nunca inclua credenciais administrativas no frontend.
+As abas `Usuarios`, `Solicitacoes` e `Sessoes` serão criadas automaticamente.
 
-## Estrutura dos dados
+## Segurança e limites
 
-### `users/{uid}`
+Essa estrutura é adequada para um MVP e uma comunidade pequena. Para uso comercial em grande escala, é recomendável migrar autenticação, banco e rate limiting para uma infraestrutura dedicada.
 
-```json
-{
-  "fullName": "Nome da pessoa",
-  "birthYear": 1990,
-  "sex": "male",
-  "email": "email@example.com",
-  "photoUrl": "",
-  "fatherId": "",
-  "motherId": ""
-}
-```
-
-### `relationshipRequests/{fromId_toId_relation}`
-
-```json
-{
-  "fromId": "uid solicitante",
-  "toId": "uid destinatário",
-  "relation": "father",
-  "participants": ["uid1", "uid2"],
-  "status": "pending"
-}
-```
+Não coloque `PASSWORD_PEPPER` ou outros segredos no GitHub.
 
 ## Publicação
 
-O frontend é estático e pode ser publicado pelo GitHub Pages a partir da branch `main`.
+O frontend é publicado pelo GitHub Pages a partir da branch `main`.

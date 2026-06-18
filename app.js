@@ -1,31 +1,5 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.2/firebase-app.js";
-import {
-  getAuth, onAuthStateChanged, createUserWithEmailAndPassword,
-  signInWithEmailAndPassword, signOut, updateProfile
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-auth.js";
-import {
-  getFirestore, doc, setDoc, getDoc, getDocs, updateDoc, collection,
-  query, where, serverTimestamp, onSnapshot
-} from "https://www.gstatic.com/firebasejs/11.0.2/firebase-firestore.js";
-
-const LOCAL_KEY = "arthuvore-local-v2";
-const SESSION_KEY = "arthuvore-session-v2";
-const firebaseConfig = window.ARTHUVORE_FIREBASE_CONFIG || {};
-const firebaseEnabled = Boolean(firebaseConfig.apiKey && !firebaseConfig.apiKey.includes("COLE_"));
-
-const seed = {
-  users: [
-    { id: "demo-arthur", fullName: "Arthur Carlos Faria", birthYear: 1995, sex: "male", email: "arthur@demo.com", password: "demo1234", photoUrl: "", fatherId: "demo-carlos", motherId: "demo-marcia" },
-    { id: "demo-carlos", fullName: "Carlos Faria", birthYear: 1965, sex: "male", email: "carlos@demo.com", password: "demo1234", photoUrl: "", fatherId: "", motherId: "" },
-    { id: "demo-marcia", fullName: "Márcia Oliveira", birthYear: 1968, sex: "female", email: "marcia@demo.com", password: "demo1234", photoUrl: "", fatherId: "", motherId: "" },
-    { id: "demo-lucas", fullName: "Lucas Faria", birthYear: 2020, sex: "male", email: "lucas@demo.com", password: "demo1234", photoUrl: "", fatherId: "demo-arthur", motherId: "" },
-    { id: "demo-helena", fullName: "Helena Oliveira", birthYear: 1942, sex: "female", email: "helena@demo.com", password: "demo1234", photoUrl: "", fatherId: "", motherId: "" }
-  ],
-  requests: []
-};
-
-let auth;
-let db;
+const API_URL = "https://script.google.com/macros/s/AKfycbymXf-sR4HNeR2DegyGwEQ00LD3i-POnVsHnfcBl5eN4GkzgKzR4geDlpSB8PQx0tGh5A/exec";
+const SESSION_KEY = "arthuvore-session-v3";
 let currentUser = null;
 let allUsers = [];
 let allRequests = [];
@@ -33,8 +7,7 @@ let selectedRelation = "father";
 let requestTab = "received";
 let pendingTarget = null;
 let photoData = "";
-let unsubscribeUsers = null;
-let unsubscribeRequests = null;
+let refreshTimer = null;
 
 const $ = (s) => document.querySelector(s);
 const els = {
@@ -48,24 +21,14 @@ init();
 
 async function init() {
   bindEvents();
-  if (firebaseEnabled) {
-    const app = initializeApp(firebaseConfig);
-    auth = getAuth(app);
-    db = getFirestore(app);
-    onAuthStateChanged(auth, async (user) => {
-      if (!user) return showPublic();
-      const snapshot = await getDoc(doc(db, "users", user.uid));
-      if (!snapshot.exists()) return;
-      currentUser = { id: user.uid, ...snapshot.data() };
-      subscribeFirebase();
-      showDashboard();
-    });
-  } else {
-    ensureLocalData();
-    const sessionId = localStorage.getItem(SESSION_KEY);
-    currentUser = localData().users.find((u) => u.id === sessionId) || null;
-    refreshLocal();
-    currentUser ? showDashboard() : showPublic();
+  const token = localStorage.getItem(SESSION_KEY);
+  if (!token) return showPublic();
+  try {
+    await loadAccount();
+    showDashboard();
+  } catch {
+    localStorage.removeItem(SESSION_KEY);
+    showPublic();
   }
 }
 
@@ -115,35 +78,19 @@ async function submitAuth(event) {
   const password = $("#auth-password").value;
   setStatus(els.authStatus, mode === "register" ? "Criando conta..." : "Entrando...");
   try {
-    if (firebaseEnabled) {
-      if (mode === "register") {
-        const credential = await createUserWithEmailAndPassword(auth, email, password);
-        const profile = {
-          fullName: $("#auth-name").value.trim(), birthYear: Number($("#auth-year").value),
-          sex: $("#auth-sex").value, email, photoUrl: "", fatherId: "", motherId: "", createdAt: serverTimestamp()
-        };
-        await updateProfile(credential.user, { displayName: profile.fullName });
-        await setDoc(doc(db, "users", credential.user.uid), profile);
-      } else await signInWithEmailAndPassword(auth, email, password);
-    } else {
-      const data = localData();
-      if (mode === "register") {
-        if (data.users.some((u) => u.email === email)) throw new Error("Este e-mail já está cadastrado.");
-        const profile = {
-          id: crypto.randomUUID(), fullName: $("#auth-name").value.trim(), birthYear: Number($("#auth-year").value),
-          sex: $("#auth-sex").value, email, password, photoUrl: "", fatherId: "", motherId: ""
-        };
-        data.users.push(profile);
-        saveLocal(data);
-        currentUser = profile;
-      } else {
-        currentUser = data.users.find((u) => u.email === email && u.password === password);
-        if (!currentUser) throw new Error("E-mail ou senha incorretos.");
-      }
-      localStorage.setItem(SESSION_KEY, currentUser.id);
-      refreshLocal();
-      showDashboard();
-    }
+    const payload = mode === "register"
+      ? {
+          fullName: $("#auth-name").value.trim(),
+          birthYear: Number($("#auth-year").value),
+          sex: $("#auth-sex").value,
+          email,
+          password
+        }
+      : { email, password };
+    const result = await api(mode, payload, false);
+    localStorage.setItem(SESSION_KEY, result.token);
+    await loadAccount();
+    showDashboard();
     els.authDialog.close();
     els.authForm.reset();
   } catch (error) {
@@ -152,17 +99,14 @@ async function submitAuth(event) {
 }
 
 async function logout() {
-  if (firebaseEnabled) await signOut(auth);
-  else {
-    localStorage.removeItem(SESSION_KEY);
-    currentUser = null;
-    showPublic();
-  }
+  try { await api("logout"); } catch {}
+  localStorage.removeItem(SESSION_KEY);
+  currentUser = null;
+  showPublic();
 }
 
 function showPublic() {
-  if (unsubscribeUsers) unsubscribeUsers();
-  if (unsubscribeRequests) unsubscribeRequests();
+  clearInterval(refreshTimer);
   currentUser = null;
   els.publicView.classList.remove("hidden");
   els.dashboard.classList.add("hidden");
@@ -177,27 +121,16 @@ function showDashboard() {
   els.privateNav.classList.remove("hidden");
   openPanel("tree-panel");
   renderAll();
+  clearInterval(refreshTimer);
+  refreshTimer = setInterval(() => loadAccount().catch(() => {}), 15000);
 }
 
-function subscribeFirebase() {
-  unsubscribeUsers?.();
-  unsubscribeRequests?.();
-  unsubscribeUsers = onSnapshot(collection(db, "users"), (snapshot) => {
-    allUsers = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-    currentUser = allUsers.find((u) => u.id === currentUser.id) || currentUser;
-    renderAll();
-  });
-  unsubscribeRequests = onSnapshot(query(collection(db, "relationshipRequests"), where("participants", "array-contains", currentUser.id)), (snapshot) => {
-    allRequests = snapshot.docs.map((item) => ({ id: item.id, ...item.data() }));
-    renderAll();
-  });
-}
-
-function refreshLocal() {
-  const data = localData();
+async function loadAccount() {
+  const data = await api("bootstrap");
+  currentUser = data.currentUser;
   allUsers = data.users;
   allRequests = data.requests;
-  if (currentUser) currentUser = allUsers.find((u) => u.id === currentUser.id) || currentUser;
+  if (!els.dashboard.classList.contains("hidden")) renderAll();
 }
 
 function renderAll() {
@@ -305,17 +238,8 @@ async function sendPendingRequest(event) {
     fromId: currentUser.id, toId: pendingTarget.id, relation: selectedRelation,
     participants: [currentUser.id, pendingTarget.id], status: "pending"
   };
-  if (firebaseEnabled) {
-    const requestId = `${currentUser.id}_${pendingTarget.id}_${selectedRelation}`;
-    await setDoc(doc(db, "relationshipRequests", requestId), { ...request, createdAt: serverTimestamp() });
-  }
-  else {
-    const data = localData();
-    data.requests.push({ ...request, id: crypto.randomUUID(), createdAt: new Date().toISOString() });
-    saveLocal(data);
-    refreshLocal();
-    renderAll();
-  }
+  await api("createRequest", { toId: pendingTarget.id, relation: selectedRelation });
+  await loadAccount();
   $("#confirm-dialog").close();
   showToast("Solicitação enviada.");
 }
@@ -361,54 +285,9 @@ function receivedRequestText(request, other) {
 }
 
 async function resolveRequest(request, accept) {
-  if (accept) {
-    const updates = relationshipUpdates(request);
-    if (!updates) return showToast("Não foi possível criar esse vínculo.");
-    if (firebaseEnabled) {
-      await updateDoc(doc(db, "users", updates.userId), updates.fields);
-      await updateDoc(doc(db, "relationshipRequests", request.id), { status: "accepted", resolvedAt: serverTimestamp() });
-    } else {
-      const data = localData();
-      Object.assign(data.users.find((u) => u.id === updates.userId), updates.fields);
-      Object.assign(data.requests.find((r) => r.id === request.id), { status: "accepted", resolvedAt: new Date().toISOString() });
-      saveLocal(data);
-      refreshLocal();
-    }
-  } else if (firebaseEnabled) {
-    await updateDoc(doc(db, "relationshipRequests", request.id), { status: "rejected", resolvedAt: serverTimestamp() });
-  } else {
-    const data = localData();
-    Object.assign(data.requests.find((r) => r.id === request.id), { status: "rejected", resolvedAt: new Date().toISOString() });
-    saveLocal(data);
-    refreshLocal();
-  }
-  renderAll();
+  await api("resolveRequest", { requestId: request.id, accept });
+  await loadAccount();
   showToast(accept ? "Vínculo confirmado." : "Solicitação recusada.");
-}
-
-function relationshipUpdates(request) {
-  const requester = allUsers.find((u) => u.id === request.fromId);
-  const target = allUsers.find((u) => u.id === request.toId);
-  if (!requester || !target) return null;
-  if (request.relation === "father") {
-    if (target.sex !== "male") return null;
-    if (requester.fatherId && requester.fatherId !== target.id) return null;
-    if (hasAncestor(target.id, requester.id)) return null;
-    return { userId: requester.id, fields: { fatherId: target.id } };
-  }
-  if (request.relation === "mother") {
-    if (target.sex !== "female") return null;
-    if (requester.motherId && requester.motherId !== target.id) return null;
-    if (hasAncestor(target.id, requester.id)) return null;
-    return { userId: requester.id, fields: { motherId: target.id } };
-  }
-  const occupied = requester.sex === "male" ? target.fatherId : target.motherId;
-  if (occupied && occupied !== requester.id) return null;
-  if (hasAncestor(requester.id, target.id)) return null;
-  return {
-    userId: target.id,
-    fields: requester.sex === "male" ? { fatherId: requester.id } : { motherId: requester.id }
-  };
 }
 
 function buildGraph(maxDegree) {
@@ -485,14 +364,8 @@ async function saveProfile(event) {
     fullName: $("#profile-name").value.trim(), birthYear: Number($("#profile-year").value),
     sex: $("#profile-sex").value, ...(photoData ? { photoUrl: photoData } : {})
   };
-  if (firebaseEnabled) await updateDoc(doc(db, "users", currentUser.id), fields);
-  else {
-    const data = localData();
-    Object.assign(data.users.find((u) => u.id === currentUser.id), fields);
-    saveLocal(data);
-    refreshLocal();
-    renderAll();
-  }
+  await api("updateProfile", fields);
+  await loadAccount();
   photoData = "";
   setStatus($("#profile-status"), "Perfil atualizado.", "success");
 }
@@ -518,9 +391,17 @@ function exportTree() {
   URL.revokeObjectURL(url);
 }
 
-function ensureLocalData() { if (!localStorage.getItem(LOCAL_KEY)) saveLocal(structuredClone(seed)); }
-function localData() { return JSON.parse(localStorage.getItem(LOCAL_KEY)); }
-function saveLocal(data) { localStorage.setItem(LOCAL_KEY, JSON.stringify(data)); }
+async function api(action, payload = {}, authenticated = true) {
+  const token = authenticated ? localStorage.getItem(SESSION_KEY) : "";
+  const response = await fetch(API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action, token, payload })
+  });
+  const result = await response.json();
+  if (!result.ok) throw new Error(result.error || "Não foi possível acessar o servidor.");
+  return result.data;
+}
 function relationName(id) { return allUsers.find((u) => u.id === id)?.fullName || ""; }
 function relationLabel(type) { return ({ father: "seu pai", mother: "sua mãe", child: "seu filho ou filha" })[type]; }
 function statusLabel(status) { return ({ pending: "Pendente", accepted: "Aceita", rejected: "Recusada" })[status]; }
