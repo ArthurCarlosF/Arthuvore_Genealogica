@@ -44,7 +44,7 @@ Não coloque IDs de planilha, chaves ou outros segredos neste repositório.
 4. Em **Implantar > Nova implantação**, escolha **Aplicativo da Web**.
 5. Execute como você e permita acesso a qualquer pessoa.
 6. Autorize Planilhas e Drive e copie a URL terminada em `/exec`.
-7. No site, clique em **Configurar API**, cole a URL e desative o modo demonstração.
+7. A implantação atual já está configurada como API padrão do site. Use **Configurar API** somente para trocar o endereço ou ativar o modo demonstração.
 
 O Apps Script criará a aba `Pessoas` e a pasta `Raizes - Fotos` automaticamente.
 

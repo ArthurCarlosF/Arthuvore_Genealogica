@@ -1,5 +1,6 @@
-const CONFIG_KEY = "raizes-config-v1";
+const CONFIG_KEY = "raizes-config-v2";
 const DEMO_KEY = "raizes-demo-data-v1";
+const DEFAULT_API_URL = "https://script.google.com/macros/s/AKfycbymXf-sR4HNeR2DegyGwEQ00LD3i-POnVsHnfcBl5eN4GkzgKzR4geDlpSB8PQx0tGh5A/exec";
 
 const demoPeople = [
   { id: "1", fullName: "Rafael Moreira", birthYear: 1988, document: "11111111111", fatherDocument: "33333333333", motherDocument: "22222222222", email: "rafael@exemplo.com", photoUrl: "", passwordHash: "demo" },
@@ -66,9 +67,13 @@ function bindEvents() {
 
 function loadConfig() {
   try {
-    return { apiUrl: "", demoMode: true, ...JSON.parse(localStorage.getItem(CONFIG_KEY) || "{}") };
+    return {
+      apiUrl: DEFAULT_API_URL,
+      demoMode: false,
+      ...JSON.parse(localStorage.getItem(CONFIG_KEY) || "{}")
+    };
   } catch {
-    return { apiUrl: "", demoMode: true };
+    return { apiUrl: DEFAULT_API_URL, demoMode: false };
   }
 }
 
