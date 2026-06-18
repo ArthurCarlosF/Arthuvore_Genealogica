@@ -121,6 +121,8 @@ select:focus, .field input:focus { border-color: var(--forest); box-shadow: 0 0 
 dialog { width: min(520px, calc(100% - 28px)); padding: 0; border: 0; border-radius: var(--radius); box-shadow: 0 30px 100px rgba(0,0,0,.3); }
 dialog::backdrop { background: rgba(7,35,29,.65); backdrop-filter: blur(5px); }
 .auth-card, .dialog-card { position: relative; padding: 34px; display: grid; gap: 17px; }
+#auth-confirm-field { display: none; }
+#auth-form[data-mode="register"] #auth-confirm-field { display: grid; }
 .dialog-close { position: absolute; right: 16px; top: 12px; border: 0; color: var(--muted); background: none; cursor: pointer; font-size: 28px; }
 .auth-card h2, .dialog-card h2 { font-size: 40px; }
 .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }

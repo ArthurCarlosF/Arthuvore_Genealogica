@@ -59,7 +59,6 @@ function openAuth(mode) {
   els.authForm.dataset.mode = mode;
   const register = mode === "register";
   $("#auth-register-fields").classList.toggle("hidden", !register);
-  $("#auth-confirm-field").classList.toggle("hidden", !register);
   $("#auth-name").required = register;
   $("#auth-year").required = register;
   $("#auth-sex").required = register;
