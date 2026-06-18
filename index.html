@@ -1,0 +1,218 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Cadastro colaborativo e visualização de árvores genealógicas.">
+  <title>Raízes — Árvore Genealógica</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="#inicio" aria-label="Raízes, página inicial">
+      <span class="brand-mark" aria-hidden="true">R</span>
+      <span>Raízes</span>
+    </a>
+    <nav aria-label="Navegação principal">
+      <a href="#buscar">Buscar</a>
+      <a href="#cadastro">Cadastrar</a>
+      <a href="instrucoes.html">Como funciona</a>
+      <button class="button button-small button-ghost" id="open-settings" type="button">Configurar API</button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero" id="inicio">
+      <div class="hero-copy">
+        <p class="eyebrow">Histórias conectadas</p>
+        <h1>Sua família,<br><em>vista por inteiro.</em></h1>
+        <p class="hero-text">Cadastre pessoas, descubra conexões e transforme registros dispersos em uma árvore viva, navegável e pronta para compartilhar.</p>
+        <div class="hero-actions">
+          <a class="button button-primary" href="#buscar">Explorar a árvore</a>
+          <a class="button button-secondary" href="#cadastro">Adicionar pessoa</a>
+        </div>
+        <div class="hero-stats" aria-label="Estatísticas">
+          <div><strong id="people-count">0</strong><span>pessoas</span></div>
+          <div><strong id="family-count">0</strong><span>famílias conectadas</span></div>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <div class="orbit orbit-one"></div>
+        <div class="orbit orbit-two"></div>
+        <div class="portrait portrait-main"><span>RM</span></div>
+        <div class="portrait portrait-a"><span>AL</span></div>
+        <div class="portrait portrait-b"><span>JS</span></div>
+        <div class="portrait portrait-c"><span>MC</span></div>
+        <div class="portrait portrait-d"><span>?</span></div>
+        <svg viewBox="0 0 520 520" role="presentation">
+          <path d="M260 250 C220 210 175 180 120 140 M260 250 C315 215 355 175 405 130 M260 250 C220 300 180 340 125 385 M260 250 C310 300 355 340 415 390"/>
+        </svg>
+      </div>
+    </section>
+
+    <section class="section search-section" id="buscar">
+      <div class="section-heading">
+        <div>
+          <p class="eyebrow">Encontre uma origem</p>
+          <h2>Buscar pessoas</h2>
+        </div>
+        <p>Pesquise por nome, sobrenome ou documento. Selecione uma pessoa para visualizar suas conexões.</p>
+      </div>
+      <div class="search-bar">
+        <label class="search-field">
+          <span class="sr-only">Buscar pessoa</span>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>
+          <input id="search-input" type="search" placeholder="Nome, sobrenome ou documento..." autocomplete="off">
+        </label>
+        <button class="button button-primary" id="search-button" type="button">Buscar</button>
+      </div>
+      <div class="result-meta"><span id="result-count">0 resultados</span></div>
+      <div class="people-grid" id="people-list" aria-live="polite"></div>
+    </section>
+
+    <section class="section tree-section hidden" id="arvore">
+      <div class="section-heading tree-heading">
+        <div>
+          <p class="eyrow eyebrow">Mapa familiar</p>
+          <h2 id="tree-title">Árvore de família</h2>
+        </div>
+        <div class="tree-controls">
+          <label>Graus
+            <select id="degree-select">
+              <option value="1">1º grau</option>
+              <option value="2" selected>2º grau</option>
+              <option value="3">3º grau</option>
+              <option value="4">4º grau</option>
+              <option value="5">5º grau</option>
+              <option value="6">6º grau</option>
+            </select>
+          </label>
+          <button class="button button-secondary" id="export-svg" type="button">Exportar SVG</button>
+          <button class="button button-primary" id="generate-tree" type="button">Gerar árvore</button>
+        </div>
+      </div>
+      <div class="tree-legend">
+        <span><i class="legend-dot person-dot"></i>Pessoa cadastrada</span>
+        <span><i class="legend-dot missing-dot"></i>Parente não encontrado na base</span>
+      </div>
+      <div class="tree-canvas" id="tree-canvas">
+        <svg id="tree-svg" role="img" aria-label="Representação da árvore genealógica"></svg>
+        <div class="tree-empty" id="tree-empty">Selecione uma pessoa e clique em “Gerar árvore”.</div>
+      </div>
+    </section>
+
+    <section class="section form-section" id="cadastro">
+      <div class="form-intro">
+        <p class="eyebrow">Amplie a história</p>
+        <h2>Adicionar uma pessoa</h2>
+        <p>Os documentos criam as conexões automaticamente. Quando um pai ou uma mãe se cadastrar, as árvores são unidas sem trabalho manual.</p>
+        <div class="privacy-note">
+          <strong>Privacidade desde o início</strong>
+          <p>Dados sensíveis não devem ficar no código do GitHub. Eles serão enviados somente à sua API privada do Apps Script.</p>
+        </div>
+      </div>
+      <form class="person-form" id="person-form">
+        <input type="hidden" id="record-id">
+        <div class="photo-field">
+          <div class="photo-preview" id="photo-preview"><span>+</span></div>
+          <label class="button button-secondary button-small" for="photo">Escolher foto</label>
+          <input id="photo" name="photo" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+          <small>JPG, PNG ou WebP. Máximo 2 MB.</small>
+        </div>
+        <div class="field full">
+          <label for="full-name">Nome completo *</label>
+          <input id="full-name" name="fullName" required maxlength="120" placeholder="Ex.: Maria Oliveira Santos">
+        </div>
+        <div class="field">
+          <label for="birth-year">Ano de nascimento *</label>
+          <input id="birth-year" name="birthYear" required type="number" min="1800" max="2100" placeholder="1985">
+        </div>
+        <div class="field">
+          <label for="document">Documento de identificação *</label>
+          <input id="document" name="document" required maxlength="30" placeholder="CPF ou outro documento">
+        </div>
+        <div class="field">
+          <label for="father-document">Documento do pai</label>
+          <input id="father-document" name="fatherDocument" maxlength="30" placeholder="Se conhecido">
+        </div>
+        <div class="field">
+          <label for="mother-document">Documento da mãe</label>
+          <input id="mother-document" name="motherDocument" maxlength="30" placeholder="Se conhecido">
+        </div>
+        <div class="field">
+          <label for="email">E-mail para notificações *</label>
+          <input id="email" name="email" required type="email" maxlength="120" placeholder="voce@exemplo.com">
+        </div>
+        <div class="field">
+          <label for="password">Senha para edição *</label>
+          <input id="password" name="password" required type="password" minlength="8" maxlength="72" placeholder="Mínimo de 8 caracteres">
+        </div>
+        <label class="consent full">
+          <input id="consent" required type="checkbox">
+          <span>Confirmo que tenho autorização para cadastrar estes dados e aceito seu uso para construir relações genealógicas.</span>
+        </label>
+        <div class="form-actions full">
+          <button class="button button-primary" type="submit">Salvar pessoa</button>
+          <button class="button button-ghost hidden" id="cancel-edit" type="button">Cancelar edição</button>
+        </div>
+        <p class="form-status full" id="form-status" role="status"></p>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <a class="brand" href="#inicio"><span class="brand-mark">R</span><span>Raízes</span></a>
+    <div class="footer-links">
+      <a href="#buscar">Buscar</a>
+      <a href="#cadastro">Cadastrar</a>
+      <a href="instrucoes.html">Como funciona</a>
+    </div>
+    <p>Feito para preservar histórias entre gerações.</p>
+  </footer>
+
+  <dialog id="settings-dialog">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" value="cancel" aria-label="Fechar">×</button>
+      <p class="eyebrow">Integração</p>
+      <h2>Conectar ao Apps Script</h2>
+      <p>Cole a URL terminada em <code>/exec</code> depois de publicar o projeto como aplicativo web.</p>
+      <label class="field">
+        <span>URL da API</span>
+        <input id="api-url" type="url" placeholder="https://script.google.com/macros/s/.../exec">
+      </label>
+      <label class="toggle-row">
+        <input id="demo-mode" type="checkbox">
+        <span>Usar dados de demonstração neste navegador</span>
+      </label>
+      <div class="dialog-actions">
+        <button class="button button-secondary" value="cancel">Cancelar</button>
+        <button class="button button-primary" id="save-settings" value="default">Salvar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="password-dialog">
+    <form method="dialog" class="dialog-card">
+      <button class="dialog-close" value="cancel" aria-label="Fechar">×</button>
+      <p class="eyebrow">Área protegida</p>
+      <h2>Editar cadastro</h2>
+      <p>Informe a senha definida no cadastro desta pessoa.</p>
+      <label class="field">
+        <span>Senha</span>
+        <input id="edit-password" type="password" minlength="8">
+      </label>
+      <p class="form-status" id="password-status"></p>
+      <div class="dialog-actions">
+        <button class="button button-secondary" value="cancel">Cancelar</button>
+        <button class="button button-primary" id="confirm-edit" value="default">Continuar</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div class="toast" id="toast" role="status"></div>
+  <script src="app.js"></script>
+</body>
+</html>
