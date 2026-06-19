@@ -154,28 +154,28 @@ function selectPerson(id) {
 }
 
 function buildGraph(root, maxDegree) {
-  const nodes = new Map([[root.id, { ...root, degree: 0, kind: "person" }]]);
+  const nodes = new Map([[root.id, { ...root, degree: 0, generation: 0, kind: "person" }]]);
   const edges = [];
-  const queue = [{ node: nodes.get(root.id), degree: 0 }];
+  const queue = [{ node: nodes.get(root.id), degree: 0, generation: 0 }];
   const visited = new Set([root.id]);
 
   while (queue.length) {
-    const { node, degree } = queue.shift();
+    const { node, degree, generation } = queue.shift();
     if (degree >= maxDegree) continue;
     if (node.kind === "person") {
       ["father", "mother"].forEach((role) => {
         const match = node[`${role}Match`];
         if (!match) return;
-        const parent = parentNode(node, role, match, degree + 1);
-        addNode(parent, degree + 1);
+        const parent = parentNode(node, role, match, degree + 1, generation - 1);
+        addNode(parent, degree + 1, generation - 1);
         edges.push({ from: node.id, to: parent.id });
       });
       people.forEach((child) => {
         ["father", "mother"].forEach((role) => {
           const match = child[`${role}Match`];
           if (match?.status === "matched" && match.personId === node.id) {
-            const childNode = { ...child, degree: degree + 1, kind: "person" };
-            addNode(childNode, degree + 1);
+            const childNode = { ...child, degree: degree + 1, generation: generation + 1, kind: "person" };
+            addNode(childNode, degree + 1, generation + 1);
             edges.push({ from: child.id, to: node.id });
           }
         });
@@ -185,8 +185,8 @@ function buildGraph(root, maxDegree) {
         ["father", "mother"].forEach((role) => {
           const match = child[`${role}Match`];
           if (match?.status === node.status && match.fingerprint === node.fingerprint) {
-            const childNode = { ...child, degree: degree + 1, kind: "person" };
-            addNode(childNode, degree + 1);
+            const childNode = { ...child, degree: degree + 1, generation: generation + 1, kind: "person" };
+            addNode(childNode, degree + 1, generation + 1);
             edges.push({ from: child.id, to: node.id });
           }
         });
@@ -195,24 +195,24 @@ function buildGraph(root, maxDegree) {
   }
   return { nodes: [...nodes.values()], edges: uniqueEdges(edges) };
 
-  function addNode(node, degree) {
+  function addNode(node, degree, generation) {
     if (!nodes.has(node.id)) nodes.set(node.id, node);
     if (!visited.has(node.id)) {
       visited.add(node.id);
-      queue.push({ node, degree });
+      queue.push({ node, degree, generation });
     }
   }
 }
 
-function parentNode(child, role, match, degree) {
+function parentNode(child, role, match, degree, generation) {
   if (match.status === "matched") {
     const person = people.find((item) => item.id === match.personId);
-    if (person) return { ...person, degree, kind: "person" };
+    if (person) return { ...person, degree, generation, kind: "person" };
   }
   return {
     id: `${match.status}:${match.fingerprint}`,
     fullName: child[`${role}Name`],
-    degree, kind: "placeholder", status: match.status,
+    degree, generation, kind: "placeholder", status: match.status,
     fingerprint: match.fingerprint, candidateCount: match.candidateCount || 0
   };
 }
@@ -233,8 +233,8 @@ function renderTree() {
 function drawGraph(graph, rootId) {
   const levels = new Map();
   graph.nodes.forEach((node) => {
-    if (!levels.has(node.degree)) levels.set(node.degree, []);
-    levels.get(node.degree).push(node);
+    if (!levels.has(node.generation)) levels.set(node.generation, []);
+    levels.get(node.generation).push(node);
   });
   const widest = Math.max(...[...levels.values()].map((items) => items.length), 1);
   const width = Math.max(900, widest * 190 + 120);
@@ -242,13 +242,18 @@ function drawGraph(graph, rootId) {
   els.treeSvg.setAttribute("viewBox", `0 0 ${width} ${height}`);
   els.treeSvg.setAttribute("width", width); els.treeSvg.setAttribute("height", height);
   const positions = new Map();
-  [...levels.entries()].sort(([a], [b]) => a - b).forEach(([level, items]) => {
+  [...levels.entries()].sort(([a], [b]) => a - b).forEach(([, items], levelIndex) => {
     const spacing = width / (items.length + 1);
-    items.forEach((node, index) => positions.set(node.id, { x: spacing * (index + 1), y: 85 + level * 155 }));
+    items.forEach((node, index) => positions.set(node.id, { x: spacing * (index + 1), y: 85 + levelIndex * 155 }));
   });
   const edgeMarkup = graph.edges.map((edge) => {
     const a = positions.get(edge.from), b = positions.get(edge.to);
-    return a && b ? `<path class="tree-edge" d="M${a.x},${a.y + 48} C${a.x},${(a.y + b.y) / 2} ${b.x},${(a.y + b.y) / 2} ${b.x},${b.y - 48}"/>` : "";
+    if (!a || !b) return "";
+    const movingDown = b.y > a.y;
+    const startY = a.y + (movingDown ? 48 : -48);
+    const endY = b.y + (movingDown ? -48 : 48);
+    const middleY = (startY + endY) / 2;
+    return `<path class="tree-edge" d="M${a.x},${startY} C${a.x},${middleY} ${b.x},${middleY} ${b.x},${endY}"/>`;
   }).join("");
   const nodeMarkup = graph.nodes.map((node) => {
     const p = positions.get(node.id);
