@@ -1,21 +1,19 @@
-const USERS_SHEET = 'Usuarios';
-const REQUESTS_SHEET = 'Solicitacoes';
-const SESSIONS_SHEET = 'Sessoes';
-const PHOTO_FOLDER_NAME = 'Arthuvore - Fotos';
+const USERS_SHEET = 'UsuariosV3';
+const SESSIONS_SHEET = 'SessoesV3';
 
 const USER_HEADERS = [
-  'id', 'fullName', 'birthYear', 'sex', 'email', 'photoUrl',
-  'fatherId', 'motherId', 'passwordSalt', 'passwordHash', 'createdAt', 'updatedAt'
-];
-const REQUEST_HEADERS = [
-  'id', 'fromId', 'toId', 'relation', 'status', 'createdAt', 'resolvedAt'
+  'id', 'fullName', 'normalizedName', 'email',
+  'birthYear', 'birthMonth', 'birthDay', 'document',
+  'fatherName', 'fatherNormalizedName', 'fatherBirthYear', 'fatherBirthMonth', 'fatherBirthDay', 'fatherDocument',
+  'motherName', 'motherNormalizedName', 'motherBirthYear', 'motherBirthMonth', 'motherBirthDay', 'motherDocument',
+  'passwordSalt', 'passwordHash', 'createdAt', 'updatedAt'
 ];
 const SESSION_HEADERS = ['tokenHash', 'userId', 'expiresAt', 'createdAt'];
 
 function doGet() {
   return jsonResponse({
     ok: true,
-    data: { service: 'Arthuvore API', version: 2 }
+    data: { service: 'Arthuvore API', version: 3 }
   });
 }
 
@@ -32,8 +30,6 @@ function doPost(e) {
     else if (action === 'bootstrap') data = bootstrap(requireUser(token));
     else if (action === 'logout') data = logout(token);
     else if (action === 'updateProfile') data = updateProfile(requireUser(token), payload);
-    else if (action === 'createRequest') data = createRequest(requireUser(token), payload);
-    else if (action === 'resolveRequest') data = resolveRequest(requireUser(token), payload);
     else throw new Error('Operação desconhecida.');
 
     return jsonResponse({ ok: true, data: data });
@@ -49,21 +45,22 @@ function register(payload) {
   try {
     const users = readTable(USERS_SHEET, USER_HEADERS);
     const email = cleanEmail(payload.email);
-    if (users.some(user => user.email === email)) {
-      throw new Error('Este e-mail já está cadastrado.');
-    }
+    if (users.some(user => user.email === email)) throw new Error('Este e-mail já está cadastrado.');
 
     const salt = Utilities.getUuid();
     const now = new Date().toISOString();
     const user = {
       id: Utilities.getUuid(),
       fullName: cleanText(payload.fullName, 120),
-      birthYear: Number(payload.birthYear),
-      sex: normalizeSex(payload.sex),
+      normalizedName: normalizeName(payload.fullName),
       email: email,
-      photoUrl: '',
-      fatherId: '',
-      motherId: '',
+      birthYear: '', birthMonth: '', birthDay: '', document: '',
+      fatherName: cleanText(payload.fatherName, 120),
+      fatherNormalizedName: normalizeName(payload.fatherName),
+      fatherBirthYear: '', fatherBirthMonth: '', fatherBirthDay: '', fatherDocument: '',
+      motherName: cleanText(payload.motherName, 120),
+      motherNormalizedName: normalizeName(payload.motherName),
+      motherBirthYear: '', motherBirthMonth: '', motherBirthDay: '', motherDocument: '',
       passwordSalt: salt,
       passwordHash: hashSecret(payload.password, salt),
       createdAt: now,
@@ -88,13 +85,12 @@ function login(payload) {
 function createSession(userId) {
   const token = `${Utilities.getUuid()}${Utilities.getUuid()}`.replace(/-/g, '');
   const now = new Date();
-  const session = {
+  appendObject(SESSIONS_SHEET, SESSION_HEADERS, {
     tokenHash: hashSecret(token, 'SESSION'),
     userId: userId,
     expiresAt: new Date(now.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString(),
     createdAt: now.toISOString()
-  };
-  appendObject(SESSIONS_SHEET, SESSION_HEADERS, session);
+  });
   return { token: token };
 }
 
@@ -122,186 +118,160 @@ function logout(token) {
 
 function bootstrap(currentUser) {
   const users = readTable(USERS_SHEET, USER_HEADERS);
-  const requests = readTable(REQUESTS_SHEET, REQUEST_HEADERS)
-    .filter(request => request.fromId === currentUser.id || request.toId === currentUser.id);
+  const resolvedUsers = users.map(user => resolvedPublicUser(user, users));
+  const currentResolved = resolvedUsers.find(user => user.id === currentUser.id);
   return {
-    currentUser: privateUser(currentUser),
-    users: users.map(publicUser),
-    requests: requests
+    currentUser: Object.assign({}, currentResolved, privateFields(currentUser)),
+    users: resolvedUsers
   };
 }
 
 function updateProfile(currentUser, payload) {
+  validateProfile(payload);
   const fields = {
     fullName: cleanText(payload.fullName, 120),
-    birthYear: Number(payload.birthYear),
-    sex: normalizeSex(payload.sex),
+    normalizedName: normalizeName(payload.fullName),
+    birthYear: optionalInteger(payload.birthYear),
+    birthMonth: optionalInteger(payload.birthMonth),
+    birthDay: optionalInteger(payload.birthDay),
+    document: normalizeDocument(payload.document),
+    fatherName: cleanText(payload.fatherName, 120),
+    fatherNormalizedName: normalizeName(payload.fatherName),
+    fatherBirthYear: optionalInteger(payload.fatherBirthYear),
+    fatherBirthMonth: optionalInteger(payload.fatherBirthMonth),
+    fatherBirthDay: optionalInteger(payload.fatherBirthDay),
+    fatherDocument: normalizeDocument(payload.fatherDocument),
+    motherName: cleanText(payload.motherName, 120),
+    motherNormalizedName: normalizeName(payload.motherName),
+    motherBirthYear: optionalInteger(payload.motherBirthYear),
+    motherBirthMonth: optionalInteger(payload.motherBirthMonth),
+    motherBirthDay: optionalInteger(payload.motherBirthDay),
+    motherDocument: normalizeDocument(payload.motherDocument),
     updatedAt: new Date().toISOString()
   };
-  if (!fields.fullName) throw new Error('Informe o nome completo.');
-  validateBirthYear(fields.birthYear);
-  if (payload.photoUrl) fields.photoUrl = savePhoto(payload.photoUrl, currentUser.id);
   updateObject(USERS_SHEET, USER_HEADERS, currentUser.id, fields);
   return true;
 }
 
-function createRequest(currentUser, payload) {
-  const lock = LockService.getScriptLock();
-  lock.waitLock(15000);
-  try {
-    const users = readTable(USERS_SHEET, USER_HEADERS);
-    const target = users.find(user => user.id === payload.toId);
-    const relation = String(payload.relation || '');
-    if (!target || target.id === currentUser.id) throw new Error('Pessoa inválida.');
-    if (!['father', 'mother', 'child'].includes(relation)) throw new Error('Parentesco inválido.');
-    if (relation === 'father' && target.sex !== 'male') throw new Error('O perfil selecionado não está cadastrado como masculino.');
-    if (relation === 'mother' && target.sex !== 'female') throw new Error('O perfil selecionado não está cadastrado como feminino.');
-    validateAvailableSlot(currentUser, target, relation);
-    validateNoCycle(users, currentUser, target, relation);
+function resolvedPublicUser(user, allUsers) {
+  const safe = {
+    id: user.id,
+    fullName: user.fullName,
+    birthYear: numberOrEmpty(user.birthYear),
+    birthMonth: numberOrEmpty(user.birthMonth),
+    birthDay: numberOrEmpty(user.birthDay),
+    fatherName: user.fatherName || '',
+    motherName: user.motherName || ''
+  };
+  safe.fatherMatch = resolveParent(user, allUsers, 'father');
+  safe.motherMatch = resolveParent(user, allUsers, 'mother');
+  return safe;
+}
 
-    const requests = readTable(REQUESTS_SHEET, REQUEST_HEADERS);
-    const duplicate = requests.some(request =>
-      request.fromId === currentUser.id &&
-      request.toId === target.id &&
-      request.relation === relation &&
-      request.status === 'pending'
-    );
-    if (duplicate) throw new Error('Já existe uma solicitação pendente.');
+function resolveParent(child, allUsers, role) {
+  const normalizedName = child[`${role}NormalizedName`] || normalizeName(child[`${role}Name`]);
+  if (!normalizedName) return { status: 'missing', normalizedName: '', candidateCount: 0 };
 
-    const request = {
-      id: Utilities.getUuid(),
-      fromId: currentUser.id,
-      toId: target.id,
-      relation: relation,
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      resolvedAt: ''
+  const candidates = allUsers.filter(candidate =>
+    candidate.id !== child.id && candidate.normalizedName === normalizedName
+  );
+  if (!candidates.length) {
+    return { status: 'missing', normalizedName: normalizedName, candidateCount: 0 };
+  }
+
+  const criteria = {
+    birthYear: numberOrEmpty(child[`${role}BirthYear`]),
+    birthMonth: numberOrEmpty(child[`${role}BirthMonth`]),
+    birthDay: numberOrEmpty(child[`${role}BirthDay`]),
+    document: normalizeDocument(child[`${role}Document`])
+  };
+  const scored = candidates.map(candidate => scoreCandidate(candidate, criteria))
+    .filter(result => result.compatible);
+
+  if (!scored.length) {
+    return { status: 'missing', normalizedName: normalizedName, candidateCount: 0 };
+  }
+  const bestScore = Math.max.apply(null, scored.map(result => result.score));
+  const best = scored.filter(result => result.score === bestScore);
+  if (best.length === 1) {
+    return {
+      status: 'matched',
+      normalizedName: normalizedName,
+      candidateCount: 1,
+      userId: best[0].candidate.id
     };
-    appendObject(REQUESTS_SHEET, REQUEST_HEADERS, request);
-    return request;
-  } finally {
-    lock.releaseLock();
   }
+  return {
+    status: 'ambiguous',
+    normalizedName: normalizedName,
+    candidateCount: best.length
+  };
 }
 
-function resolveRequest(currentUser, payload) {
-  const lock = LockService.getScriptLock();
-  lock.waitLock(15000);
-  try {
-    const requests = readTable(REQUESTS_SHEET, REQUEST_HEADERS);
-    const request = requests.find(item => item.id === payload.requestId);
-    if (!request || request.toId !== currentUser.id || request.status !== 'pending') {
-      throw new Error('Solicitação não encontrada ou já respondida.');
-    }
-
-    if (!payload.accept) {
-      updateObject(REQUESTS_SHEET, REQUEST_HEADERS, request.id, {
-        status: 'rejected', resolvedAt: new Date().toISOString()
-      });
-      return true;
-    }
-
-    const users = readTable(USERS_SHEET, USER_HEADERS);
-    const requester = users.find(user => user.id === request.fromId);
-    const target = users.find(user => user.id === request.toId);
-    if (!requester || !target) throw new Error('Um dos perfis não foi encontrado.');
-    validateAvailableSlot(requester, target, request.relation);
-    validateNoCycle(users, requester, target, request.relation);
-
-    if (request.relation === 'father') {
-      updateObject(USERS_SHEET, USER_HEADERS, requester.id, { fatherId: target.id, updatedAt: new Date().toISOString() });
-    } else if (request.relation === 'mother') {
-      updateObject(USERS_SHEET, USER_HEADERS, requester.id, { motherId: target.id, updatedAt: new Date().toISOString() });
-    } else {
-      const field = requester.sex === 'male' ? 'fatherId' : 'motherId';
-      const updates = { updatedAt: new Date().toISOString() };
-      updates[field] = requester.id;
-      updateObject(USERS_SHEET, USER_HEADERS, target.id, updates);
-    }
-
-    updateObject(REQUESTS_SHEET, REQUEST_HEADERS, request.id, {
-      status: 'accepted', resolvedAt: new Date().toISOString()
-    });
-    return true;
-  } finally {
-    lock.releaseLock();
+function scoreCandidate(candidate, criteria) {
+  let score = 0;
+  const comparisons = [
+    ['birthYear', 20],
+    ['birthMonth', 5],
+    ['birthDay', 2],
+    ['document', 100]
+  ];
+  for (let index = 0; index < comparisons.length; index++) {
+    const field = comparisons[index][0];
+    const weight = comparisons[index][1];
+    const expected = criteria[field];
+    if (expected === '' || expected === 0) continue;
+    const actual = field === 'document'
+      ? normalizeDocument(candidate.document)
+      : numberOrEmpty(candidate[field]);
+    if (actual === '' || actual === 0) continue;
+    if (String(actual) !== String(expected)) return { candidate: candidate, compatible: false, score: -1 };
+    score += weight;
   }
+  return { candidate: candidate, compatible: true, score: score };
 }
 
-function validateAvailableSlot(requester, target, relation) {
-  if (relation === 'father' && requester.fatherId && requester.fatherId !== target.id) {
-    throw new Error('Este perfil já possui um pai vinculado.');
-  }
-  if (relation === 'mother' && requester.motherId && requester.motherId !== target.id) {
-    throw new Error('Este perfil já possui uma mãe vinculada.');
-  }
-  if (relation === 'child') {
-    const occupied = requester.sex === 'male' ? target.fatherId : target.motherId;
-    if (occupied && occupied !== requester.id) throw new Error('A pessoa já possui esse vínculo parental.');
-  }
-}
-
-function validateNoCycle(users, requester, target, relation) {
-  const parentId = relation === 'child' ? requester.id : target.id;
-  const childId = relation === 'child' ? target.id : requester.id;
-  if (hasAncestor(users, parentId, childId, {})) {
-    throw new Error('Essa relação criaria um ciclo na árvore.');
-  }
-}
-
-function hasAncestor(users, personId, possibleAncestorId, visited) {
-  if (!personId || visited[personId]) return false;
-  visited[personId] = true;
-  const person = users.find(user => user.id === personId);
-  if (!person) return false;
-  if (person.fatherId === possibleAncestorId || person.motherId === possibleAncestorId) return true;
-  return hasAncestor(users, person.fatherId, possibleAncestorId, visited) ||
-    hasAncestor(users, person.motherId, possibleAncestorId, visited);
+function privateFields(user) {
+  return {
+    email: user.email,
+    document: user.document || '',
+    fatherBirthYear: numberOrEmpty(user.fatherBirthYear),
+    fatherBirthMonth: numberOrEmpty(user.fatherBirthMonth),
+    fatherBirthDay: numberOrEmpty(user.fatherBirthDay),
+    fatherDocument: user.fatherDocument || '',
+    motherBirthYear: numberOrEmpty(user.motherBirthYear),
+    motherBirthMonth: numberOrEmpty(user.motherBirthMonth),
+    motherBirthDay: numberOrEmpty(user.motherBirthDay),
+    motherDocument: user.motherDocument || ''
+  };
 }
 
 function validateRegistration(payload) {
-  if (!cleanText(payload.fullName, 120)) throw new Error('Informe o nome completo.');
-  validateBirthYear(Number(payload.birthYear));
-  normalizeSex(payload.sex);
+  if (!cleanText(payload.fullName, 120)) throw new Error('Informe seu nome completo.');
+  if (!cleanText(payload.fatherName, 120)) throw new Error('Informe o nome completo do seu pai.');
+  if (!cleanText(payload.motherName, 120)) throw new Error('Informe o nome completo da sua mãe.');
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail(payload.email))) throw new Error('E-mail inválido.');
   if (!payload.password || String(payload.password).length < 8) throw new Error('A senha deve ter pelo menos oito caracteres.');
 }
 
-function validateBirthYear(year) {
-  if (year < 1800 || year > new Date().getFullYear()) throw new Error('Ano de nascimento inválido.');
+function validateProfile(payload) {
+  if (!cleanText(payload.fullName, 120)) throw new Error('Informe seu nome completo.');
+  if (!cleanText(payload.fatherName, 120)) throw new Error('Informe o nome completo do seu pai.');
+  if (!cleanText(payload.motherName, 120)) throw new Error('Informe o nome completo da sua mãe.');
+  validateDateParts(payload.birthYear, payload.birthMonth, payload.birthDay, 'sua');
+  validateDateParts(payload.fatherBirthYear, payload.fatherBirthMonth, payload.fatherBirthDay, 'do seu pai');
+  validateDateParts(payload.motherBirthYear, payload.motherBirthMonth, payload.motherBirthDay, 'da sua mãe');
 }
 
-function normalizeSex(value) {
-  if (!['male', 'female'].includes(value)) throw new Error('Sexo inválido.');
-  return value;
-}
-
-function publicUser(user) {
-  return {
-    id: user.id,
-    fullName: user.fullName,
-    birthYear: Number(user.birthYear),
-    sex: user.sex,
-    photoUrl: user.photoUrl || '',
-    fatherId: user.fatherId || '',
-    motherId: user.motherId || ''
-  };
-}
-
-function privateUser(user) {
-  return Object.assign(publicUser(user), { email: user.email });
-}
-
-function savePhoto(dataUrl, userId) {
-  const match = String(dataUrl).match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/);
-  if (!match) throw new Error('Formato de foto inválido.');
-  const bytes = Utilities.base64Decode(match[2]);
-  if (bytes.length > 400 * 1024) throw new Error('A foto deve ter no máximo 400 KB.');
-  const folders = DriveApp.getFoldersByName(PHOTO_FOLDER_NAME);
-  const folder = folders.hasNext() ? folders.next() : DriveApp.createFolder(PHOTO_FOLDER_NAME);
-  const file = folder.createFile(Utilities.newBlob(bytes, match[1], `${userId}-${Date.now()}`));
-  file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-  return `https://drive.google.com/thumbnail?id=${file.getId()}&sz=w400`;
+function validateDateParts(year, month, day, label) {
+  year = optionalInteger(year);
+  month = optionalInteger(month);
+  day = optionalInteger(day);
+  if (year && (year < 1800 || year > new Date().getFullYear())) throw new Error(`Ano de nascimento ${label} inválido.`);
+  if (month && (month < 1 || month > 12)) throw new Error(`Mês de nascimento ${label} inválido.`);
+  if (day && (day < 1 || day > 31)) throw new Error(`Dia de nascimento ${label} inválido.`);
+  if ((month || day) && !year) throw new Error(`Informe o ano antes do mês ou dia de nascimento ${label}.`);
+  if (day && !month) throw new Error(`Informe o mês antes do dia de nascimento ${label}.`);
 }
 
 function getTableSheet(name, headers) {
@@ -329,7 +299,9 @@ function readTable(name, headers) {
 }
 
 function appendObject(name, headers, object) {
-  getTableSheet(name, headers).appendRow(headers.map(header => object[header] === undefined ? '' : object[header]));
+  getTableSheet(name, headers).appendRow(headers.map(header =>
+    object[header] === undefined ? '' : object[header]
+  ));
 }
 
 function updateObject(name, headers, id, fields) {
@@ -355,6 +327,30 @@ function hashSecret(value, salt) {
   return Utilities.base64Encode(bytes);
 }
 
+function normalizeName(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toUpperCase()
+    .replace(/[^A-Z0-9 ]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function normalizeDocument(value) {
+  return String(value || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+}
+
+function numberOrEmpty(value) {
+  return value === '' || value === null || value === undefined ? '' : Number(value);
+}
+
+function optionalInteger(value) {
+  if (value === '' || value === null || value === undefined) return '';
+  const number = Number(value);
+  return Number.isFinite(number) ? Math.trunc(number) : '';
+}
+
 function safeEquals(a, b) {
   a = String(a || '');
   b = String(b || '');
@@ -369,7 +365,7 @@ function cleanEmail(value) {
 }
 
 function cleanText(value, maxLength) {
-  return String(value || '').trim().slice(0, maxLength);
+  return String(value || '').trim().replace(/\s+/g, ' ').slice(0, maxLength);
 }
 
 function jsonResponse(value) {

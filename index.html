@@ -3,12 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Arthuvore Genealógica — construa sua árvore familiar por meio de conexões confirmadas.">
+  <meta name="description" content="Arthuvore Genealógica — construa sua árvore familiar pelo nome das pessoas.">
   <title>Arthuvore Genealógica</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260618-2">
+  <link rel="stylesheet" href="styles.css?v=20260618-3">
 </head>
 <body>
   <header class="site-header">
@@ -22,9 +22,6 @@
       <button class="button button-primary button-small" data-open-auth="register">Criar conta</button>
     </nav>
     <nav id="private-nav" class="hidden">
-      <button class="nav-notifications" id="open-requests" type="button">
-        Solicitações <span id="request-badge">0</span>
-      </button>
       <button class="button button-ghost button-small" id="logout-button" type="button">Sair</button>
     </nav>
   </header>
@@ -32,26 +29,25 @@
   <main>
     <section class="landing" id="public-view">
       <div class="landing-copy">
-        <p class="eyebrow">Famílias conectadas com consentimento</p>
-        <h1>Sua história começa <em>por você.</em></h1>
-        <p>Crie sua conta, encontre seus familiares e envie solicitações. Cada vínculo só entra na árvore depois de ser confirmado pelas duas pessoas.</p>
+        <p class="eyebrow">Sua família começa pelos nomes</p>
+        <h1>Uma árvore simples de <em>começar.</em></h1>
+        <p>Cadastre apenas seu nome e os nomes completos dos seus pais. A Arthuvore encontra conexões automaticamente e pede mais informações somente quando houver pessoas com nomes iguais.</p>
         <div class="hero-actions">
           <button class="button button-primary" data-open-auth="register">Cadastrar nova conta</button>
           <button class="button button-secondary" data-open-auth="login">Entrar na minha conta</button>
         </div>
         <div class="trust-row">
-          <span>✓ Vínculos confirmados</span>
-          <span>✓ Dados privados</span>
-          <span>✓ Árvore exportável</span>
+          <span>✓ Cadastro simples</span>
+          <span>✓ Conexões automáticas</span>
+          <span>✓ Dados adicionais opcionais</span>
         </div>
       </div>
       <div class="landing-tree" aria-hidden="true">
-        <div class="tree-ring ring-one"></div>
-        <div class="tree-ring ring-two"></div>
+        <div class="tree-ring ring-one"></div><div class="tree-ring ring-two"></div>
         <div class="landing-person lp-main">Você</div>
         <div class="landing-person lp-father">Pai</div>
         <div class="landing-person lp-mother">Mãe</div>
-        <div class="landing-person lp-child">Filho</div>
+        <div class="landing-person lp-child">Filhos</div>
         <svg viewBox="0 0 520 520"><path d="M260 255 C210 220 175 180 125 140 M260 255 C310 220 350 180 400 140 M260 255 C260 310 260 350 260 410"/></svg>
       </div>
     </section>
@@ -65,11 +61,9 @@
         </div>
         <div class="sidebar-actions">
           <button class="sidebar-button active" data-panel="tree-panel"><span>⌘</span> Minha árvore</button>
-          <button class="sidebar-button" data-panel="connections-panel"><span>＋</span> Adicionar parente</button>
-          <button class="sidebar-button" data-panel="requests-panel"><span>✉</span> Solicitações <i id="sidebar-badge">0</i></button>
-          <button class="sidebar-button" data-panel="profile-panel"><span>○</span> Meu perfil</button>
+          <button class="sidebar-button" data-panel="profile-panel"><span>○</span> Meus dados</button>
         </div>
-        <p class="sidebar-help">Cada conexão precisa ser aceita pela outra pessoa.</p>
+        <p class="sidebar-help">Quanto mais detalhes opcionais forem informados, mais precisa será a correspondência.</p>
       </aside>
 
       <div class="dashboard-content">
@@ -78,92 +72,82 @@
             <div>
               <p class="eyebrow">Visão familiar</p>
               <h2>Minha árvore</h2>
-              <p>Exibindo inicialmente parentes a até três graus de distância.</p>
+              <p>Exibindo inicialmente familiares a até três graus de distância.</p>
             </div>
             <div class="tree-controls">
               <label>Distância
                 <select id="degree-select">
-                  <option value="1">1 grau</option>
-                  <option value="2">2 graus</option>
-                  <option value="3" selected>3 graus</option>
-                  <option value="4">4 graus</option>
-                  <option value="5">5 graus</option>
-                  <option value="6">6 graus</option>
+                  <option value="1">1 grau</option><option value="2">2 graus</option>
+                  <option value="3" selected>3 graus</option><option value="4">4 graus</option>
+                  <option value="5">5 graus</option><option value="6">6 graus</option>
                 </select>
               </label>
               <button class="button button-secondary" id="export-svg">Exportar SVG</button>
             </div>
           </div>
-          <div class="relationship-actions">
-            <button class="quick-relation" data-relation="father"><span>＋</span><div><strong>Adicionar pai</strong><small id="father-status">Nenhum vínculo</small></div></button>
-            <button class="quick-relation" data-relation="mother"><span>＋</span><div><strong>Adicionar mãe</strong><small id="mother-status">Nenhum vínculo</small></div></button>
-            <button class="quick-relation" data-relation="child"><span>＋</span><div><strong>Adicionar filho</strong><small>Buscar e solicitar</small></div></button>
+
+          <div class="ambiguity-banner hidden" id="ambiguity-banner">
+            <strong>Precisamos de mais informações</strong>
+            <p id="ambiguity-message"></p>
+            <button class="button button-secondary button-small" data-panel="profile-panel">Adicionar detalhes</button>
           </div>
+
+          <div class="parent-summary">
+            <article><span>Pai</span><strong id="father-status">Não informado</strong><small id="father-detail"></small></article>
+            <article><span>Mãe</span><strong id="mother-status">Não informada</strong><small id="mother-detail"></small></article>
+          </div>
+
           <div class="tree-canvas">
             <svg id="tree-svg" role="img" aria-label="Minha árvore genealógica"></svg>
-            <div class="tree-empty" id="tree-empty">Seus vínculos confirmados aparecerão aqui.</div>
+            <div class="tree-empty" id="tree-empty">As conexões encontradas aparecerão aqui.</div>
           </div>
-        </section>
-
-        <section class="dashboard-panel hidden" id="connections-panel">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Nova conexão</p>
-              <h2>Adicionar um parente</h2>
-              <p>Busque por nome e/ou ano de nascimento. A pessoa receberá uma solicitação antes do vínculo ser criado.</p>
-            </div>
-          </div>
-          <div class="relation-picker" role="group" aria-label="Tipo de parentesco">
-            <button class="relation-option selected" data-relation="father">Meu pai</button>
-            <button class="relation-option" data-relation="mother">Minha mãe</button>
-            <button class="relation-option" data-relation="child">Meu filho ou filha</button>
-          </div>
-          <div class="people-search">
-            <label class="field"><span>Nome</span><input id="connection-name" placeholder="Nome ou sobrenome"></label>
-            <label class="field"><span>Ano de nascimento</span><input id="connection-year" type="number" min="1800" max="2100" placeholder="Ex.: 1965"></label>
-            <button class="button button-primary" id="connection-search">Buscar pessoas</button>
-          </div>
-          <p class="search-hint" id="connection-hint">Informe ao menos um dos filtros para começar.</p>
-          <div class="connection-results" id="connection-results"></div>
-        </section>
-
-        <section class="dashboard-panel hidden" id="requests-panel">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Confirmações</p>
-              <h2>Solicitações de parentesco</h2>
-              <p>Aceite somente pessoas e relações que você reconhece.</p>
-            </div>
-          </div>
-          <div class="request-tabs">
-            <button class="active" data-request-tab="received">Recebidas</button>
-            <button data-request-tab="sent">Enviadas</button>
-          </div>
-          <div class="requests-list" id="requests-list"></div>
         </section>
 
         <section class="dashboard-panel hidden" id="profile-panel">
           <div class="panel-heading">
             <div>
-              <p class="eyebrow">Conta</p>
-              <h2>Meu perfil</h2>
-              <p>Estas informações ajudam seus familiares a identificar você nas buscas.</p>
+              <p class="eyebrow">Edição</p>
+              <h2>Meus dados</h2>
+              <p>Nome e parentes são os únicos dados obrigatórios. Datas e documentos são opcionais e ajudam a diferenciar homônimos.</p>
             </div>
           </div>
-          <form class="profile-form" id="profile-form">
-            <div class="photo-field">
-              <div class="photo-preview" id="profile-photo-preview"><span>+</span></div>
-              <label class="button button-secondary button-small" for="profile-photo">Alterar foto</label>
-              <input id="profile-photo" type="file" accept="image/jpeg,image/png,image/webp" hidden>
+
+          <form class="profile-form expanded-profile" id="profile-form">
+            <div class="form-section-title full">
+              <span>Seu perfil</span>
+              <p>Informações que ajudam seus parentes a encontrar a pessoa correta.</p>
             </div>
-            <label class="field full"><span>Nome completo</span><input id="profile-name" required maxlength="120"></label>
-            <label class="field"><span>Ano de nascimento</span><input id="profile-year" required type="number" min="1800" max="2100"></label>
-            <label class="field"><span>Sexo</span>
-              <select id="profile-sex" required><option value="male">Masculino</option><option value="female">Feminino</option></select>
-            </label>
+            <label class="field full"><span>Seu nome completo *</span><input id="profile-name" required maxlength="120"></label>
+            <label class="field"><span>Ano de nascimento</span><input id="profile-year" type="number" min="1800" max="2100" placeholder="Opcional"></label>
+            <label class="field"><span>Mês de nascimento</span><select id="profile-month"><option value="">Não informado</option></select></label>
+            <label class="field"><span>Dia de nascimento</span><input id="profile-day" type="number" min="1" max="31" placeholder="Opcional"></label>
+            <label class="field"><span>Documento de identificação</span><input id="profile-document" maxlength="40" placeholder="Opcional e privado"></label>
             <label class="field full"><span>E-mail</span><input id="profile-email" type="email" disabled></label>
-            <button class="button button-primary" type="submit">Salvar alterações</button>
-            <p class="form-status" id="profile-status"></p>
+
+            <div class="form-section-title full">
+              <span>Seu pai</span>
+              <p>Se houver mais de uma pessoa com o mesmo nome, adicione os detalhes que souber.</p>
+            </div>
+            <label class="field full"><span>Nome completo do pai *</span><input id="father-name" required maxlength="120"></label>
+            <label class="field"><span>Ano de nascimento do pai</span><input id="father-year" type="number" min="1800" max="2100" placeholder="Opcional"></label>
+            <label class="field"><span>Mês</span><select id="father-month"><option value="">Não informado</option></select></label>
+            <label class="field"><span>Dia</span><input id="father-day" type="number" min="1" max="31" placeholder="Opcional"></label>
+            <label class="field"><span>Documento do pai</span><input id="father-document" maxlength="40" placeholder="Opcional"></label>
+
+            <div class="form-section-title full">
+              <span>Sua mãe</span>
+              <p>Os mesmos detalhes podem ser usados para diferenciar pessoas com nomes iguais.</p>
+            </div>
+            <label class="field full"><span>Nome completo da mãe *</span><input id="mother-name" required maxlength="120"></label>
+            <label class="field"><span>Ano de nascimento da mãe</span><input id="mother-year" type="number" min="1800" max="2100" placeholder="Opcional"></label>
+            <label class="field"><span>Mês</span><select id="mother-month"><option value="">Não informado</option></select></label>
+            <label class="field"><span>Dia</span><input id="mother-day" type="number" min="1" max="31" placeholder="Opcional"></label>
+            <label class="field"><span>Documento da mãe</span><input id="mother-document" maxlength="40" placeholder="Opcional"></label>
+
+            <div class="full profile-actions">
+              <button class="button button-primary" type="submit">Salvar e recalcular árvore</button>
+              <p class="form-status" id="profile-status"></p>
+            </div>
           </form>
         </section>
       </div>
@@ -176,38 +160,20 @@
       <p class="eyebrow" id="auth-eyebrow">Bem-vindo de volta</p>
       <h2 id="auth-title">Entrar na conta</h2>
       <div class="auth-register-fields hidden" id="auth-register-fields">
-        <label class="field"><span>Nome completo</span><input id="auth-name" maxlength="120"></label>
-        <div class="field-row">
-          <label class="field"><span>Ano de nascimento</span><input id="auth-year" type="number" min="1800" max="2100"></label>
-          <label class="field"><span>Sexo</span><select id="auth-sex"><option value="male">Masculino</option><option value="female">Feminino</option></select></label>
-        </div>
+        <label class="field"><span>Seu nome completo</span><input id="auth-name" maxlength="120"></label>
+        <label class="field"><span>Nome completo do seu pai</span><input id="auth-father-name" maxlength="120"></label>
+        <label class="field"><span>Nome completo da sua mãe</span><input id="auth-mother-name" maxlength="120"></label>
       </div>
       <label class="field"><span>E-mail</span><input id="auth-email" type="email" required autocomplete="email"></label>
       <label class="field"><span>Senha</span><input id="auth-password" type="password" required minlength="8" autocomplete="current-password"></label>
-      <label class="field" id="auth-confirm-field">
-        <span>Confirmar senha</span>
-        <input id="auth-confirm-password" type="password" minlength="8" autocomplete="new-password">
-      </label>
+      <label class="field" id="auth-confirm-field"><span>Confirmar senha</span><input id="auth-confirm-password" type="password" minlength="8" autocomplete="new-password"></label>
       <button class="button button-primary full-width" id="auth-submit" type="submit">Entrar</button>
       <button class="auth-switch" id="auth-switch" type="button">Ainda não tenho conta</button>
       <p class="form-status" id="auth-status"></p>
     </form>
   </dialog>
 
-  <dialog id="confirm-dialog">
-    <form class="dialog-card" method="dialog">
-      <button class="dialog-close" value="cancel">×</button>
-      <p class="eyebrow">Confirmar conexão</p>
-      <h2 id="confirm-title">Enviar solicitação?</h2>
-      <p id="confirm-text"></p>
-      <div class="dialog-actions">
-        <button class="button button-secondary" value="cancel">Cancelar</button>
-        <button class="button button-primary" id="confirm-send" value="default">Enviar solicitação</button>
-      </div>
-    </form>
-  </dialog>
-
   <div class="toast" id="toast" role="status"></div>
-  <script type="module" src="app.js?v=20260618-2"></script>
+  <script type="module" src="app.js?v=20260618-3"></script>
 </body>
 </html>

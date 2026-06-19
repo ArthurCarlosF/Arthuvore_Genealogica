@@ -7,11 +7,11 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=20260618-3">
   <style>
     .guide{padding:90px clamp(22px,8vw,120px)}.guide:nth-child(even){background:var(--cream)}
     .guide-hero{min-height:480px;display:grid;align-content:center;background:linear-gradient(120deg,var(--paper),var(--cream))}
-    .guide-hero p{max-width:720px;color:var(--muted);font-size:18px}.guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
+    .guide-hero p{max-width:760px;color:var(--muted);font-size:18px}.guide-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
     .guide-card{padding:26px;background:white;border:1px solid var(--line);border-radius:18px}.guide-card span{color:var(--gold);font:38px "DM Serif Display"}
     .guide-card h3{margin:12px 0 7px}.guide-card p{margin:0;color:var(--muted);font-size:14px}
     .guide-steps{max-width:900px;margin:0;padding:0;list-style:none}.guide-steps li{padding:26px 0;display:grid;grid-template-columns:55px 1fr;gap:18px;border-bottom:1px solid var(--line)}
@@ -27,38 +27,27 @@
   <main>
     <section class="guide guide-hero">
       <p class="eyebrow">Como funciona</p>
-      <h1>Uma árvore feita de <em>conexões confirmadas.</em></h1>
-      <p>Você cria sua conta, encontra familiares já cadastrados e envia uma solicitação. A relação só aparece na árvore quando a outra pessoa aceita.</p>
+      <h1>Comece com apenas <em>três nomes.</em></h1>
+      <p>Informe seu nome completo e os nomes completos do seu pai e da sua mãe. O sistema procura as pessoas automaticamente e cria perfis provisórios para quem ainda não se cadastrou.</p>
       <div class="hero-actions"><a class="button button-primary" href="index.html">Criar minha conta</a></div>
     </section>
     <section class="guide">
-      <p class="eyebrow">Passo a passo</p>
-      <h2>Comece por você</h2>
+      <p class="eyebrow">Cadastro</p>
+      <h2>Passo a passo</h2>
       <ol class="guide-steps">
-        <li><b>1</b><div><h3>Crie sua conta</h3><p>Informe nome completo, ano de nascimento, sexo, e-mail e uma senha segura.</p></div></li>
-        <li><b>2</b><div><h3>Abra sua árvore</h3><p>Ao entrar, você verá sua árvore pessoal e os atalhos para adicionar pai, mãe ou filho.</p></div></li>
-        <li><b>3</b><div><h3>Busque o familiar</h3><p>Pesquise por nome, ano de nascimento ou ambos. Foto e ano ajudam a diferenciar pessoas com nomes iguais.</p></div></li>
-        <li><b>4</b><div><h3>Envie uma solicitação</h3><p>Selecione a pessoa correta e confirme o parentesco que deseja propor.</p></div></li>
-        <li><b>5</b><div><h3>Aguarde a confirmação</h3><p>A outra pessoa poderá aceitar ou recusar. Nenhum vínculo é criado sem consentimento.</p></div></li>
-        <li><b>6</b><div><h3>Explore e exporte</h3><p>A árvore começa com três graus de distância. Você pode ampliar o filtro até seis graus e exportar em SVG.</p></div></li>
+        <li><b>1</b><div><h3>Informe os três nomes</h3><p>Digite seu nome completo e os nomes completos do seu pai e da sua mãe.</p></div></li>
+        <li><b>2</b><div><h3>Crie seu acesso</h3><p>Informe e-mail, senha e confirmação da senha.</p></div></li>
+        <li><b>3</b><div><h3>Veja sua árvore</h3><p>Pessoas ainda não cadastradas aparecem como perfis provisórios compartilhados entre os possíveis irmãos.</p></div></li>
+        <li><b>4</b><div><h3>Complete quando quiser</h3><p>Dentro da conta, ano, mês, dia de nascimento e documento são opcionais.</p></div></li>
       </ol>
     </section>
     <section class="guide">
-      <p class="eyebrow">Relações</p>
-      <h2>Quem atualiza qual informação?</h2>
+      <p class="eyebrow">Nomes iguais</p>
+      <h2>Como diferenciamos homônimos</h2>
       <div class="guide-grid">
-        <article class="guide-card"><span>01</span><h3>Adicionar pai</h3><p>Você envia a solicitação. Quando ele aceita, o ID dele é adicionado ao campo de pai do seu perfil.</p></article>
-        <article class="guide-card"><span>02</span><h3>Adicionar mãe</h3><p>Você envia a solicitação. Quando ela aceita, o ID dela é adicionado ao campo de mãe do seu perfil.</p></article>
-        <article class="guide-card"><span>03</span><h3>Adicionar filho</h3><p>Ao aceitar, seu ID é adicionado ao perfil do filho como pai ou mãe, conforme o sexo cadastrado em sua conta.</p></article>
-      </div>
-    </section>
-    <section class="guide">
-      <p class="eyebrow">Privacidade</p>
-      <h2>Informações usadas com cuidado</h2>
-      <div class="guide-grid">
-        <article class="guide-card"><h3>CPF não é obrigatório</h3><p>As conexões usam IDs internos automáticos, portanto não é necessário conhecer o documento dos familiares.</p></article>
-        <article class="guide-card"><h3>E-mail não aparece na busca</h3><p>Outros usuários encontram você por nome e ano de nascimento, sem acesso ao seu login.</p></article>
-        <article class="guide-card"><h3>Você controla os vínculos</h3><p>Solicitações recebidas podem ser aceitas ou recusadas dentro da sua conta.</p></article>
+        <article class="guide-card"><span>01</span><h3>Um resultado</h3><p>Se houver apenas uma pessoa com o nome informado, a conexão é criada automaticamente.</p></article>
+        <article class="guide-card"><span>02</span><h3>Vários resultados</h3><p>A árvore mostra uma interrogação e informa que são necessários mais dados.</p></article>
+        <article class="guide-card"><span>03</span><h3>Desempate</h3><p>Datas e documento informados têm prioridade. Cadastros com o campo vazio continuam compatíveis quando não há correspondência exata.</p></article>
       </div>
     </section>
   </main>

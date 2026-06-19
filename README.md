@@ -1,64 +1,60 @@
 # Arthuvore Genealógica
 
-Rede genealógica colaborativa com contas individuais e relações familiares confirmadas.
+Árvore genealógica colaborativa com cadastro simplificado e correspondência inteligente por nomes.
 
-## Funcionalidades
+## Cadastro inicial
 
-- Cadastro e login por e-mail e senha.
-- ID interno automático para cada usuário.
-- Perfil com nome, ano de nascimento, sexo e foto.
-- Busca por nome e/ou ano de nascimento.
-- Solicitações para adicionar pai, mãe ou filho.
-- Vínculo criado somente depois do aceite.
-- Árvore com três graus por padrão e filtro de até seis graus.
-- Exportação em SVG.
-- Painel de solicitações recebidas e enviadas.
+São solicitados apenas:
+
+- Nome completo.
+- Nome completo do pai.
+- Nome completo da mãe.
+- E-mail.
+- Senha e confirmação.
+
+## Correspondência
+
+Os nomes são normalizados, ignorando acentos, diferenças entre maiúsculas/minúsculas, pontuação e espaços duplicados.
+
+- Nenhum cadastro com o nome do pai ou mãe: cria um perfil provisório.
+- Um cadastro com aquele nome: cria a conexão automaticamente.
+- Mais de um cadastro com o mesmo nome: mostra uma interrogação e solicita mais dados.
+- Filhos que informaram o mesmo nome de pai ou mãe ficam conectados pelo mesmo perfil provisório.
+
+Dados opcionais usados para desempate:
+
+- Ano de nascimento.
+- Mês de nascimento.
+- Dia de nascimento.
+- Documento de identificação.
+
+Uma correspondência exata tem prioridade. Se não houver valor exato, um cadastro que ainda não informou aquele dado continua sendo considerado compatível. Valores informados e conflitantes impedem a correspondência.
 
 ## Arquitetura
 
-- Frontend estático publicado no GitHub Pages.
-- API criada com Google Apps Script.
-- Google Sheets armazena usuários, solicitações e sessões.
-- Google Drive armazena fotos.
-- Senhas são armazenadas como hash com salt e pepper, nunca em texto puro.
-- Sessões utilizam tokens aleatórios com validade de 30 dias.
+- Frontend: GitHub Pages.
+- Backend: Google Apps Script.
+- Dados: Google Sheets.
+- Senhas: hash SHA-256 com salt individual e pepper secreto.
+- Sessões: tokens aleatórios válidos por 30 dias.
 
-## Configurar o Apps Script
+## Atualizar o Apps Script
 
-1. Abra o projeto em [script.google.com](https://script.google.com).
-2. Substitua o conteúdo de `Code.gs` pelo arquivo `apps-script/Code.gs`.
-3. Em **Configurações do projeto > Propriedades do script**, configure:
+1. Copie `apps-script/Code.gs` para o projeto.
+2. Confirme as propriedades:
 
 ```text
 SPREADSHEET_ID = ID da planilha
-PASSWORD_PEPPER = texto secreto, longo e aleatório
+PASSWORD_PEPPER = texto secreto longo e aleatório
 ```
 
-4. Em **Implantar > Gerenciar implantações**, edite o aplicativo Web.
-5. Selecione **Nova versão**.
-6. Configure:
-
-```text
-Executar como: você
-Quem pode acessar: qualquer pessoa
-```
-
-7. Clique em **Implantar**.
+3. Crie uma **Nova versão** da implantação como aplicativo Web.
+4. Execute como você e permita acesso a qualquer pessoa.
 
 A URL `/exec` deve retornar:
 
 ```json
-{"ok":true,"data":{"service":"Arthuvore API","version":2}}
+{"ok":true,"data":{"service":"Arthuvore API","version":3}}
 ```
 
-As abas `Usuarios`, `Solicitacoes` e `Sessoes` serão criadas automaticamente.
-
-## Segurança e limites
-
-Essa estrutura é adequada para um MVP e uma comunidade pequena. Para uso comercial em grande escala, é recomendável migrar autenticação, banco e rate limiting para uma infraestrutura dedicada.
-
-Não coloque `PASSWORD_PEPPER` ou outros segredos no GitHub.
-
-## Publicação
-
-O frontend é publicado pelo GitHub Pages a partir da branch `main`.
+As novas abas `UsuariosV3` e `SessoesV3` serão criadas automaticamente. As abas antigas não são alteradas.

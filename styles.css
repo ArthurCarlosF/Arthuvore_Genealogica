@@ -114,9 +114,24 @@ select:focus, .field input:focus { border-color: var(--forest); box-shadow: 0 0 
 .request-status { padding: 6px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
 .status-pending { color: #8a642f; background: #faedcf; }.status-accepted { color: var(--forest); background: var(--mint); }.status-rejected { color: var(--danger); background: #f7dfdf; }
 .profile-form { max-width: 760px; padding: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.expanded-profile { max-width: 900px; }
 .full { grid-column: 1 / -1; }
 .photo-field { grid-column: 1 / -1; display: flex; align-items: center; gap: 12px; }
 .photo-preview { width: 72px; height: 72px; overflow: hidden; display: grid; place-items: center; background: var(--mint); border-radius: 50%; font-weight: 700; }
+.form-section-title { margin-top: 15px; padding-top: 25px; border-top: 1px solid var(--line); }
+.form-section-title:first-child { margin-top: 0; padding-top: 0; border-top: 0; }
+.form-section-title span { font: 26px "DM Serif Display", serif; }
+.form-section-title p { margin: 3px 0 0; color: var(--muted); font-size: 12px; }
+.profile-actions { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.parent-summary { margin-bottom: 18px; display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.parent-summary article { padding: 17px 20px; display: grid; background: var(--paper); border: 1px solid var(--line); border-radius: 14px; }
+.parent-summary span { color: var(--gold); font-size: 10px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+.parent-summary strong { margin-top: 3px; }.parent-summary small { color: var(--muted); }
+.ambiguity-banner { margin-bottom: 18px; padding: 18px 20px; display: grid; grid-template-columns: 1fr auto; align-items: center; gap: 4px 20px; color: #6f4b1f; background: #fff3d8; border: 1px solid #e8c98b; border-radius: 14px; }
+.ambiguity-banner p { margin: 0; font-size: 13px; }.ambiguity-banner .button { grid-column: 2; grid-row: 1 / 3; }
+.tree-node.placeholder rect { fill: var(--cream); stroke: var(--gold); stroke-width: 2; stroke-dasharray: 6 4; }
+.tree-node.placeholder.ambiguous rect { fill: #fff3d8; stroke: #b67829; }
+.tree-node .question-mark { fill: var(--gold); font-size: 18px; font-weight: 700; }
 
 dialog { width: min(520px, calc(100% - 28px)); padding: 0; border: 0; border-radius: var(--radius); box-shadow: 0 30px 100px rgba(0,0,0,.3); }
 dialog::backdrop { background: rgba(7,35,29,.65); backdrop-filter: blur(5px); }
@@ -135,7 +150,7 @@ dialog::backdrop { background: rgba(7,35,29,.65); backdrop-filter: blur(5px); }
 @media (max-width: 960px) {
   .landing { grid-template-columns: 1fr; }.landing-tree { min-height: 430px; }
   .dashboard { grid-template-columns: 1fr; }.dashboard-sidebar { padding: 15px; position: sticky; top: 76px; z-index: 10; }
-  .profile-summary, .sidebar-help { display: none; }.sidebar-actions { margin: 0; grid-template-columns: repeat(4, 1fr); }
+  .profile-summary, .sidebar-help { display: none; }.sidebar-actions { margin: 0; grid-template-columns: repeat(2, 1fr); }
   .sidebar-button { justify-content: center; font-size: 0; }.sidebar-button span { font-size: 18px; }
   .people-search { grid-template-columns: 1fr 1fr; }.people-search .button { grid-column: 1 / -1; }
   .panel-heading { align-items: start; flex-direction: column; }.relationship-actions { grid-template-columns: 1fr; }
@@ -147,4 +162,6 @@ dialog::backdrop { background: rgba(7,35,29,.65); backdrop-filter: blur(5px); }
   .sidebar-actions { gap: 3px; }.people-search, .profile-form { grid-template-columns: 1fr; padding: 20px; }
   .people-search .button, .full, .photo-field { grid-column: 1; }.connection-card, .request-card { align-items: stretch; flex-direction: column; }
   .request-actions { justify-content: flex-end; }.field-row { grid-template-columns: 1fr; }
+  .parent-summary { grid-template-columns: 1fr; }
+  .ambiguity-banner { grid-template-columns: 1fr; }.ambiguity-banner .button { grid-column: 1; grid-row: auto; justify-self: start; }
 }
