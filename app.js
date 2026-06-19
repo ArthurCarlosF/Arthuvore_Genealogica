@@ -236,13 +236,14 @@ function drawGraph(graph, rootId) {
     if (!levels.has(node.generation)) levels.set(node.generation, []);
     levels.get(node.generation).push(node);
   });
-  const widest = Math.max(...[...levels.values()].map((items) => items.length), 1);
+  const orderedLevels = orderFamilyRows(levels, graph.edges, rootId);
+  const widest = Math.max(...[...orderedLevels.values()].map((items) => items.length), 1);
   const width = Math.max(900, widest * 190 + 120);
-  const height = Math.max(540, levels.size * 165 + 90);
+  const height = Math.max(540, orderedLevels.size * 165 + 90);
   els.treeSvg.setAttribute("viewBox", `0 0 ${width} ${height}`);
   els.treeSvg.setAttribute("width", width); els.treeSvg.setAttribute("height", height);
   const positions = new Map();
-  [...levels.entries()].sort(([a], [b]) => a - b).forEach(([, items], levelIndex) => {
+  [...orderedLevels.entries()].sort(([a], [b]) => a - b).forEach(([, items], levelIndex) => {
     const spacing = width / (items.length + 1);
     items.forEach((node, index) => positions.set(node.id, { x: spacing * (index + 1), y: 85 + levelIndex * 155 }));
   });
@@ -269,6 +270,92 @@ function drawGraph(graph, rootId) {
       <text class="node-meta" y="17">${birthLabel(node.birthDate)}</text></g>`;
   }).join("");
   els.treeSvg.innerHTML = edgeMarkup + nodeMarkup;
+}
+
+function orderFamilyRows(levels, edges, rootId) {
+  const ordered = new Map();
+  const generations = [...levels.keys()].sort((a, b) => a - b);
+  const rootGeneration = levels.has(0) ? 0 : generations[0];
+  const rootItems = [...(levels.get(rootGeneration) || [])];
+  rootItems.sort((a, b) => {
+    if (a.id === rootId) return -1;
+    if (b.id === rootId) return 1;
+    return familyKey(a).localeCompare(familyKey(b)) || a.fullName.localeCompare(b.fullName, "pt-BR");
+  });
+  ordered.set(rootGeneration, keepFamilyGroupsTogether(rootItems));
+
+  for (let generation = rootGeneration - 1; generations.includes(generation); generation--) {
+    const lowerOrder = indexById(ordered.get(generation + 1) || []);
+    const items = keepFamilyGroupsTogether([...(levels.get(generation) || [])]);
+    ordered.set(generation, sortGroupsByConnections(items, lowerOrder, edges, "children"));
+  }
+
+  for (let generation = rootGeneration + 1; generations.includes(generation); generation++) {
+    const upperOrder = indexById(ordered.get(generation - 1) || []);
+    const items = keepFamilyGroupsTogether([...(levels.get(generation) || [])]);
+    ordered.set(generation, sortGroupsByConnections(items, upperOrder, edges, "parents"));
+  }
+
+  generations.forEach((generation) => {
+    if (!ordered.has(generation)) ordered.set(generation, keepFamilyGroupsTogether([...(levels.get(generation) || [])]));
+  });
+  return ordered;
+}
+
+function keepFamilyGroupsTogether(items) {
+  const groups = new Map();
+  items.forEach((item, originalIndex) => {
+    const key = familyKey(item) || `single:${item.id}`;
+    if (!groups.has(key)) groups.set(key, { key, originalIndex, items: [] });
+    groups.get(key).items.push(item);
+  });
+  return [...groups.values()]
+    .sort((a, b) => a.originalIndex - b.originalIndex)
+    .flatMap((group) => group.items.sort((a, b) => a.fullName.localeCompare(b.fullName, "pt-BR")));
+}
+
+function sortGroupsByConnections(items, adjacentOrder, edges, direction) {
+  const groups = new Map();
+  items.forEach((item, originalIndex) => {
+    const key = familyKey(item) || `single:${item.id}`;
+    if (!groups.has(key)) groups.set(key, { originalIndex, items: [] });
+    groups.get(key).items.push(item);
+  });
+  return [...groups.values()]
+    .map((group) => {
+      const connectedPositions = [];
+      group.items.forEach((item) => {
+        edges.forEach((edge) => {
+          const adjacentId = direction === "children"
+            ? (edge.to === item.id ? edge.from : null)
+            : (edge.from === item.id ? edge.to : null);
+          if (adjacentId && adjacentOrder.has(adjacentId)) connectedPositions.push(adjacentOrder.get(adjacentId));
+        });
+      });
+      return {
+        ...group,
+        position: connectedPositions.length
+          ? connectedPositions.reduce((sum, value) => sum + value, 0) / connectedPositions.length
+          : Number.MAX_SAFE_INTEGER
+      };
+    })
+    .sort((a, b) => a.position - b.position || a.originalIndex - b.originalIndex)
+    .flatMap((group) => group.items.sort((a, b) => a.fullName.localeCompare(b.fullName, "pt-BR")));
+}
+
+function familyKey(person) {
+  if (person.kind !== "person") return "";
+  const father = person.fatherMatch?.status === "matched"
+    ? `id:${person.fatherMatch.personId}`
+    : person.fatherMatch?.fingerprint || normalizeName(person.fatherName);
+  const mother = person.motherMatch?.status === "matched"
+    ? `id:${person.motherMatch.personId}`
+    : person.motherMatch?.fingerprint || normalizeName(person.motherName);
+  return `${father || "?"}|${mother || "?"}`;
+}
+
+function indexById(items) {
+  return new Map(items.map((item, index) => [item.id, index]));
 }
 
 function exportTree() {
