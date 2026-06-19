@@ -146,6 +146,26 @@ dialog::backdrop { background: rgba(7,35,29,.65); backdrop-filter: blur(5px); }
 .form-status { min-height: 18px; margin: 0; color: var(--muted); font-size: 12px; }.form-status.error { color: var(--danger); }.form-status.success { color: var(--forest); }
 .toast { position: fixed; right: 20px; bottom: 20px; z-index: 50; padding: 13px 18px; color: white; background: var(--forest); border-radius: 12px; box-shadow: var(--shadow); opacity: 0; transform: translateY(15px); pointer-events: none; transition: .25s; }
 .toast.show { opacity: 1; transform: none; }
+.public-section { padding: 90px clamp(22px, 7vw, 105px); }
+.search-area, .tree-area { background: var(--cream); }
+.section-heading { margin-bottom: 38px; display: flex; align-items: end; justify-content: space-between; gap: 35px; }
+.section-heading > p { max-width: 500px; color: var(--muted); }
+.search-box { max-width: 900px; padding: 22px; display: grid; grid-template-columns: 1fr auto; align-items: end; gap: 14px; background: var(--paper); border: 1px solid var(--line); border-radius: 18px; }
+.search-hint { color: var(--muted); font-size: 12px; }
+.people-results { display: grid; gap: 10px; }
+.person-result-card { padding: 18px 20px; display: flex; align-items: center; justify-content: space-between; gap: 20px; background: var(--paper); border: 1px solid var(--line); border-radius: 15px; }
+.person-result-card > div:first-child { display: grid; }.person-result-card span { color: var(--muted); font-size: 12px; }
+.result-actions { display: flex; gap: 7px; }
+.collaborative-form { max-width: 920px; margin: 0 auto; padding: 32px; background: var(--paper); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); }
+.basic-fields, .optional-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.optional-toggle { width: 100%; margin-top: 22px; padding: 17px; display: flex; align-items: center; gap: 12px; color: var(--ink); background: var(--mint); border: 1px solid var(--line); border-radius: 14px; cursor: pointer; text-align: left; }
+.optional-toggle > span { width: 34px; height: 34px; display: grid; place-items: center; color: white; background: var(--forest); border-radius: 50%; font-size: 20px; }
+.optional-toggle div { display: flex; gap: 8px; align-items: baseline; }.optional-toggle small { color: var(--gold); font-weight: 700; text-transform: uppercase; }
+.optional-description { margin: 8px 3px 20px; color: var(--muted); font-size: 12px; }
+.grandparents-panel { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+.grandparent-group { padding: 20px; display: grid; gap: 14px; background: var(--cream); border-radius: 15px; }
+.grandparent-group h3 { margin: 0; font: 22px "DM Serif Display", serif; }
+.form-actions { margin-top: 25px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
 
 @media (max-width: 960px) {
   .landing { grid-template-columns: 1fr; }.landing-tree { min-height: 430px; }
@@ -154,6 +174,7 @@ dialog::backdrop { background: rgba(7,35,29,.65); backdrop-filter: blur(5px); }
   .sidebar-button { justify-content: center; font-size: 0; }.sidebar-button span { font-size: 18px; }
   .people-search { grid-template-columns: 1fr 1fr; }.people-search .button { grid-column: 1 / -1; }
   .panel-heading { align-items: start; flex-direction: column; }.relationship-actions { grid-template-columns: 1fr; }
+  .section-heading { align-items: start; flex-direction: column; }
 }
 @media (max-width: 640px) {
   .site-header { padding: 0 14px; }.brand { font-size: 19px; }#public-nav > a { display: none; }
@@ -164,4 +185,7 @@ dialog::backdrop { background: rgba(7,35,29,.65); backdrop-filter: blur(5px); }
   .request-actions { justify-content: flex-end; }.field-row { grid-template-columns: 1fr; }
   .parent-summary { grid-template-columns: 1fr; }
   .ambiguity-banner { grid-template-columns: 1fr; }.ambiguity-banner .button { grid-column: 1; grid-row: auto; justify-self: start; }
+  .public-section { padding: 60px 18px; }.search-box, .basic-fields, .optional-panel, .grandparents-panel { grid-template-columns: 1fr; }
+  .person-result-card { align-items: stretch; flex-direction: column; }.result-actions { justify-content: flex-end; }
+  .collaborative-form { padding: 20px; }.optional-toggle div { align-items: start; flex-direction: column; gap: 1px; }
 }

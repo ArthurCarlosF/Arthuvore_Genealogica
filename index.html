@@ -3,177 +3,121 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Arthuvore Genealógica — construa sua árvore familiar pelo nome das pessoas.">
+  <meta name="description" content="Arthuvore Genealógica — uma árvore familiar colaborativa.">
   <title>Arthuvore Genealógica</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Serif+Display&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="styles.css?v=20260618-3">
+  <link rel="stylesheet" href="styles.css?v=20260618-4">
 </head>
 <body>
   <header class="site-header">
-    <a class="brand" href="#inicio" aria-label="Arthuvore Genealógica">
-      <span class="brand-mark">A</span>
-      <span>Arthuvore <small>Genealógica</small></span>
-    </a>
-    <nav id="public-nav">
+    <a class="brand" href="#inicio"><span class="brand-mark">A</span><span>Arthuvore <small>Genealógica</small></span></a>
+    <nav>
       <a href="instrucoes.html">Como funciona</a>
-      <button class="button button-ghost button-small" data-open-auth="login">Entrar</button>
-      <button class="button button-primary button-small" data-open-auth="register">Criar conta</button>
-    </nav>
-    <nav id="private-nav" class="hidden">
-      <button class="button button-ghost button-small" id="logout-button" type="button">Sair</button>
+      <a href="#consultar">Consultar</a>
+      <a class="button button-primary button-small" href="#cadastrar">Cadastrar pessoa</a>
     </nav>
   </header>
 
   <main>
-    <section class="landing" id="public-view">
+    <section class="landing" id="inicio">
       <div class="landing-copy">
-        <p class="eyebrow">Sua família começa pelos nomes</p>
-        <h1>Uma árvore simples de <em>começar.</em></h1>
-        <p>Cadastre apenas seu nome e os nomes completos dos seus pais. A Arthuvore encontra conexões automaticamente e pede mais informações somente quando houver pessoas com nomes iguais.</p>
+        <p class="eyebrow">Uma árvore feita por todos</p>
+        <h1>Registre nomes.<br><em>Descubra conexões.</em></h1>
+        <p>Qualquer pessoa pode cadastrar, consultar e completar informações. A Arthuvore compara nomes, datas e avós para montar as relações familiares automaticamente.</p>
         <div class="hero-actions">
-          <button class="button button-primary" data-open-auth="register">Cadastrar nova conta</button>
-          <button class="button button-secondary" data-open-auth="login">Entrar na minha conta</button>
+          <a class="button button-primary" href="#cadastrar">Cadastrar uma pessoa</a>
+          <a class="button button-secondary" href="#consultar">Consultar uma pessoa</a>
         </div>
-        <div class="trust-row">
-          <span>✓ Cadastro simples</span>
-          <span>✓ Conexões automáticas</span>
-          <span>✓ Dados adicionais opcionais</span>
-        </div>
+        <div class="trust-row"><span>✓ Sem necessidade de login</span><span>✓ Detalhes opcionais</span><span>✓ Árvore exportável</span></div>
       </div>
       <div class="landing-tree" aria-hidden="true">
         <div class="tree-ring ring-one"></div><div class="tree-ring ring-two"></div>
-        <div class="landing-person lp-main">Você</div>
-        <div class="landing-person lp-father">Pai</div>
-        <div class="landing-person lp-mother">Mãe</div>
-        <div class="landing-person lp-child">Filhos</div>
+        <div class="landing-person lp-main">Pessoa</div><div class="landing-person lp-father">Pai</div>
+        <div class="landing-person lp-mother">Mãe</div><div class="landing-person lp-child">Filhos</div>
         <svg viewBox="0 0 520 520"><path d="M260 255 C210 220 175 180 125 140 M260 255 C310 220 350 180 400 140 M260 255 C260 310 260 350 260 410"/></svg>
       </div>
     </section>
 
-    <section class="dashboard hidden" id="dashboard">
-      <aside class="dashboard-sidebar">
-        <div class="profile-summary">
-          <div class="profile-avatar" id="sidebar-avatar">?</div>
-          <strong id="sidebar-name">Minha conta</strong>
-          <span id="sidebar-meta"></span>
-        </div>
-        <div class="sidebar-actions">
-          <button class="sidebar-button active" data-panel="tree-panel"><span>⌘</span> Minha árvore</button>
-          <button class="sidebar-button" data-panel="profile-panel"><span>○</span> Meus dados</button>
-        </div>
-        <p class="sidebar-help">Quanto mais detalhes opcionais forem informados, mais precisa será a correspondência.</p>
-      </aside>
-
-      <div class="dashboard-content">
-        <section class="dashboard-panel" id="tree-panel">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Visão familiar</p>
-              <h2>Minha árvore</h2>
-              <p>Exibindo inicialmente familiares a até três graus de distância.</p>
-            </div>
-            <div class="tree-controls">
-              <label>Distância
-                <select id="degree-select">
-                  <option value="1">1 grau</option><option value="2">2 graus</option>
-                  <option value="3" selected>3 graus</option><option value="4">4 graus</option>
-                  <option value="5">5 graus</option><option value="6">6 graus</option>
-                </select>
-              </label>
-              <button class="button button-secondary" id="export-svg">Exportar SVG</button>
-            </div>
-          </div>
-
-          <div class="ambiguity-banner hidden" id="ambiguity-banner">
-            <strong>Precisamos de mais informações</strong>
-            <p id="ambiguity-message"></p>
-            <button class="button button-secondary button-small" data-panel="profile-panel">Adicionar detalhes</button>
-          </div>
-
-          <div class="parent-summary">
-            <article><span>Pai</span><strong id="father-status">Não informado</strong><small id="father-detail"></small></article>
-            <article><span>Mãe</span><strong id="mother-status">Não informada</strong><small id="mother-detail"></small></article>
-          </div>
-
-          <div class="tree-canvas">
-            <svg id="tree-svg" role="img" aria-label="Minha árvore genealógica"></svg>
-            <div class="tree-empty" id="tree-empty">As conexões encontradas aparecerão aqui.</div>
-          </div>
-        </section>
-
-        <section class="dashboard-panel hidden" id="profile-panel">
-          <div class="panel-heading">
-            <div>
-              <p class="eyebrow">Edição</p>
-              <h2>Meus dados</h2>
-              <p>Nome e parentes são os únicos dados obrigatórios. Datas e documentos são opcionais e ajudam a diferenciar homônimos.</p>
-            </div>
-          </div>
-
-          <form class="profile-form expanded-profile" id="profile-form">
-            <div class="form-section-title full">
-              <span>Seu perfil</span>
-              <p>Informações que ajudam seus parentes a encontrar a pessoa correta.</p>
-            </div>
-            <label class="field full"><span>Seu nome completo *</span><input id="profile-name" required maxlength="120"></label>
-            <label class="field"><span>Ano de nascimento</span><input id="profile-year" type="number" min="1800" max="2100" placeholder="Opcional"></label>
-            <label class="field"><span>Mês de nascimento</span><select id="profile-month"><option value="">Não informado</option></select></label>
-            <label class="field"><span>Dia de nascimento</span><input id="profile-day" type="number" min="1" max="31" placeholder="Opcional"></label>
-            <label class="field"><span>Documento de identificação</span><input id="profile-document" maxlength="40" placeholder="Opcional e privado"></label>
-            <label class="field full"><span>E-mail</span><input id="profile-email" type="email" disabled></label>
-
-            <div class="form-section-title full">
-              <span>Seu pai</span>
-              <p>Se houver mais de uma pessoa com o mesmo nome, adicione os detalhes que souber.</p>
-            </div>
-            <label class="field full"><span>Nome completo do pai *</span><input id="father-name" required maxlength="120"></label>
-            <label class="field"><span>Ano de nascimento do pai</span><input id="father-year" type="number" min="1800" max="2100" placeholder="Opcional"></label>
-            <label class="field"><span>Mês</span><select id="father-month"><option value="">Não informado</option></select></label>
-            <label class="field"><span>Dia</span><input id="father-day" type="number" min="1" max="31" placeholder="Opcional"></label>
-            <label class="field"><span>Documento do pai</span><input id="father-document" maxlength="40" placeholder="Opcional"></label>
-
-            <div class="form-section-title full">
-              <span>Sua mãe</span>
-              <p>Os mesmos detalhes podem ser usados para diferenciar pessoas com nomes iguais.</p>
-            </div>
-            <label class="field full"><span>Nome completo da mãe *</span><input id="mother-name" required maxlength="120"></label>
-            <label class="field"><span>Ano de nascimento da mãe</span><input id="mother-year" type="number" min="1800" max="2100" placeholder="Opcional"></label>
-            <label class="field"><span>Mês</span><select id="mother-month"><option value="">Não informado</option></select></label>
-            <label class="field"><span>Dia</span><input id="mother-day" type="number" min="1" max="31" placeholder="Opcional"></label>
-            <label class="field"><span>Documento da mãe</span><input id="mother-document" maxlength="40" placeholder="Opcional"></label>
-
-            <div class="full profile-actions">
-              <button class="button button-primary" type="submit">Salvar e recalcular árvore</button>
-              <p class="form-status" id="profile-status"></p>
-            </div>
-          </form>
-        </section>
+    <section class="public-section search-area" id="consultar">
+      <div class="section-heading">
+        <div><p class="eyebrow">Pesquisa colaborativa</p><h2>Consultar uma pessoa</h2></div>
+        <p>Busque pelo nome. Se existirem homônimos, datas e nomes dos pais ajudam a encontrar o registro correto.</p>
       </div>
+      <div class="search-box">
+        <label class="field"><span>Nome completo ou parte do nome</span><input id="search-name" type="search" placeholder="Ex.: Ramon Carlos de Faria"></label>
+        <button class="button button-primary" id="search-button" type="button">Pesquisar</button>
+      </div>
+      <p class="search-hint" id="search-status">Digite um nome para consultar.</p>
+      <div class="people-results" id="people-results"></div>
+    </section>
+
+    <section class="public-section form-area" id="cadastrar">
+      <div class="section-heading">
+        <div><p class="eyebrow">Novo registro</p><h2 id="form-title">Cadastrar uma pessoa</h2></div>
+        <p>Comece apenas com os três nomes. Informações extras são opcionais e podem ser adicionadas agora ou depois.</p>
+      </div>
+
+      <form class="collaborative-form" id="person-form">
+        <input id="record-id" type="hidden">
+        <div class="basic-fields">
+          <label class="field full"><span>Nome completo da pessoa *</span><input id="person-name" required maxlength="120" placeholder="Nome completo"></label>
+          <label class="field"><span>Nome completo do pai *</span><input id="father-name" required maxlength="120" placeholder="Nome completo do pai"></label>
+          <label class="field"><span>Nome completo da mãe *</span><input id="mother-name" required maxlength="120" placeholder="Nome completo da mãe"></label>
+        </div>
+
+        <button class="optional-toggle" id="toggle-details" type="button" aria-expanded="false">
+          <span>＋</span><div><strong>Adicionar mais detalhes</strong><small>Opcional</small></div>
+        </button>
+        <p class="optional-description">Informações adicionais ajudam a diferenciar pessoas com nomes iguais e tornam as conexões da árvore mais confiáveis.</p>
+
+        <div class="optional-panel hidden" id="details-panel">
+          <label class="field"><span>Data de nascimento da pessoa</span><input id="person-birth-date" type="date"></label>
+          <label class="field"><span>Data de nascimento do pai</span><input id="father-birth-date" type="date"></label>
+          <label class="field"><span>Data de nascimento da mãe</span><input id="mother-birth-date" type="date"></label>
+
+          <button class="optional-toggle full" id="toggle-grandparents" type="button" aria-expanded="false">
+            <span>＋</span><div><strong>Adicionar ainda mais detalhes</strong><small>Opcional</small></div>
+          </button>
+          <p class="optional-description full">Os nomes dos avós são especialmente úteis quando existem duas ou mais pessoas com o mesmo nome.</p>
+
+          <div class="grandparents-panel hidden full" id="grandparents-panel">
+            <div class="grandparent-group">
+              <h3>Avós paternos</h3>
+              <label class="field"><span>Nome completo do avô paterno</span><input id="paternal-grandfather" maxlength="120"></label>
+              <label class="field"><span>Nome completo da avó paterna</span><input id="paternal-grandmother" maxlength="120"></label>
+            </div>
+            <div class="grandparent-group">
+              <h3>Avós maternos</h3>
+              <label class="field"><span>Nome completo do avô materno</span><input id="maternal-grandfather" maxlength="120"></label>
+              <label class="field"><span>Nome completo da avó materna</span><input id="maternal-grandmother" maxlength="120"></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-actions">
+          <button class="button button-primary" type="submit">Salvar pessoa</button>
+          <button class="button button-secondary hidden" id="cancel-edit" type="button">Cancelar edição</button>
+          <p class="form-status" id="form-status"></p>
+        </div>
+      </form>
+    </section>
+
+    <section class="public-section tree-area hidden" id="arvore">
+      <div class="section-heading">
+        <div><p class="eyebrow">Visualização</p><h2 id="tree-title">Árvore genealógica</h2></div>
+        <div class="tree-controls">
+          <label>Distância<select id="degree-select"><option value="1">1 grau</option><option value="2">2 graus</option><option value="3" selected>3 graus</option><option value="4">4 graus</option><option value="5">5 graus</option><option value="6">6 graus</option></select></label>
+          <button class="button button-secondary" id="export-svg" type="button">Exportar SVG</button>
+        </div>
+      </div>
+      <div class="ambiguity-banner hidden" id="ambiguity-banner"><strong>Há pessoas com nomes iguais</strong><p id="ambiguity-message"></p><button class="button button-secondary button-small" id="edit-from-warning">Adicionar mais detalhes</button></div>
+      <div class="tree-canvas"><svg id="tree-svg"></svg><div class="tree-empty" id="tree-empty">Nenhuma conexão encontrada.</div></div>
     </section>
   </main>
 
-  <dialog id="auth-dialog">
-    <form class="auth-card" id="auth-form">
-      <button class="dialog-close" type="button" data-close-dialog>×</button>
-      <p class="eyebrow" id="auth-eyebrow">Bem-vindo de volta</p>
-      <h2 id="auth-title">Entrar na conta</h2>
-      <div class="auth-register-fields hidden" id="auth-register-fields">
-        <label class="field"><span>Seu nome completo</span><input id="auth-name" maxlength="120"></label>
-        <label class="field"><span>Nome completo do seu pai</span><input id="auth-father-name" maxlength="120"></label>
-        <label class="field"><span>Nome completo da sua mãe</span><input id="auth-mother-name" maxlength="120"></label>
-      </div>
-      <label class="field"><span>E-mail</span><input id="auth-email" type="email" required autocomplete="email"></label>
-      <label class="field"><span>Senha</span><input id="auth-password" type="password" required minlength="8" autocomplete="current-password"></label>
-      <label class="field" id="auth-confirm-field"><span>Confirmar senha</span><input id="auth-confirm-password" type="password" minlength="8" autocomplete="new-password"></label>
-      <button class="button button-primary full-width" id="auth-submit" type="submit">Entrar</button>
-      <button class="auth-switch" id="auth-switch" type="button">Ainda não tenho conta</button>
-      <p class="form-status" id="auth-status"></p>
-    </form>
-  </dialog>
-
   <div class="toast" id="toast" role="status"></div>
-  <script type="module" src="app.js?v=20260618-3"></script>
+  <script type="module" src="app.js?v=20260618-4"></script>
 </body>
 </html>

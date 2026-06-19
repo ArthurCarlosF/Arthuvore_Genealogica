@@ -1,60 +1,50 @@
 # Arthuvore Genealógica
 
-Árvore genealógica colaborativa com cadastro simplificado e correspondência inteligente por nomes.
+Árvore genealógica pública e colaborativa. Não exige login: qualquer pessoa pode cadastrar, consultar e complementar registros.
 
-## Cadastro inicial
+## Cadastro
 
-São solicitados apenas:
+Campos obrigatórios:
 
-- Nome completo.
+- Nome completo da pessoa.
 - Nome completo do pai.
 - Nome completo da mãe.
-- E-mail.
-- Senha e confirmação.
+
+Detalhes opcionais:
+
+- Data de nascimento da pessoa.
+- Data de nascimento do pai.
+- Data de nascimento da mãe.
+- Nomes dos quatro avós.
+
+Os detalhes opcionais ajudam a diferenciar homônimos e tornam as conexões mais confiáveis.
 
 ## Correspondência
 
-Os nomes são normalizados, ignorando acentos, diferenças entre maiúsculas/minúsculas, pontuação e espaços duplicados.
+O sistema normaliza nomes, ignorando acentos, pontuação, maiúsculas e espaços duplicados.
 
-- Nenhum cadastro com o nome do pai ou mãe: cria um perfil provisório.
-- Um cadastro com aquele nome: cria a conexão automaticamente.
-- Mais de um cadastro com o mesmo nome: mostra uma interrogação e solicita mais dados.
-- Filhos que informaram o mesmo nome de pai ou mãe ficam conectados pelo mesmo perfil provisório.
+- Nenhuma pessoa cadastrada com o nome: perfil provisório.
+- Uma pessoa compatível: conexão automática.
+- Mais de uma pessoa igualmente compatível: estado ambíguo com interrogação.
+- Datas e nomes dos avós aumentam a pontuação de uma correspondência.
+- Dados conflitantes eliminam um candidato.
+- Campo opcional vazio continua compatível.
 
-Dados opcionais usados para desempate:
-
-- Ano de nascimento.
-- Mês de nascimento.
-- Dia de nascimento.
-- Documento de identificação.
-
-Uma correspondência exata tem prioridade. Se não houver valor exato, um cadastro que ainda não informou aquele dado continua sendo considerado compatível. Valores informados e conflitantes impedem a correspondência.
-
-## Arquitetura
-
-- Frontend: GitHub Pages.
-- Backend: Google Apps Script.
-- Dados: Google Sheets.
-- Senhas: hash SHA-256 com salt individual e pepper secreto.
-- Sessões: tokens aleatórios válidos por 30 dias.
-
-## Atualizar o Apps Script
+## Apps Script
 
 1. Copie `apps-script/Code.gs` para o projeto.
-2. Confirme as propriedades:
-
-```text
-SPREADSHEET_ID = ID da planilha
-PASSWORD_PEPPER = texto secreto longo e aleatório
-```
-
-3. Crie uma **Nova versão** da implantação como aplicativo Web.
+2. Mantenha `SPREADSHEET_ID` nas propriedades do script.
+3. Crie uma nova versão da implantação como aplicativo Web.
 4. Execute como você e permita acesso a qualquer pessoa.
 
 A URL `/exec` deve retornar:
 
 ```json
-{"ok":true,"data":{"service":"Arthuvore API","version":3}}
+{"ok":true,"data":{"service":"Arthuvore API","version":4}}
 ```
 
-As novas abas `UsuariosV3` e `SessoesV3` serão criadas automaticamente. As abas antigas não são alteradas.
+A aba `PessoasV4` será criada automaticamente.
+
+## Observação
+
+Como qualquer visitante pode editar registros, esta versão prioriza simplicidade. Para uso público amplo, recomenda-se adicionar histórico de alterações, moderação, backups e proteção contra automações.

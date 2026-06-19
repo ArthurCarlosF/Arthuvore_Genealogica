@@ -1,257 +1,159 @@
 const API_URL = "https://script.google.com/macros/s/AKfycbymXf-sR4HNeR2DegyGwEQ00LD3i-POnVsHnfcBl5eN4GkzgKzR4geDlpSB8PQx0tGh5A/exec";
-const SESSION_KEY = "arthuvore-session-v4";
-
-let currentUser = null;
-let allUsers = [];
-let refreshTimer = null;
+let people = [];
+let selectedId = "";
 
 const $ = (selector) => document.querySelector(selector);
 const els = {
-  publicView: $("#public-view"),
-  dashboard: $("#dashboard"),
-  publicNav: $("#public-nav"),
-  privateNav: $("#private-nav"),
-  authDialog: $("#auth-dialog"),
-  authForm: $("#auth-form"),
-  authStatus: $("#auth-status"),
-  treeSvg: $("#tree-svg"),
-  treeEmpty: $("#tree-empty"),
-  toast: $("#toast")
+  results: $("#people-results"), form: $("#person-form"), status: $("#form-status"),
+  treeSection: $("#arvore"), treeSvg: $("#tree-svg"), treeEmpty: $("#tree-empty"), toast: $("#toast")
 };
 
 init();
 
 async function init() {
-  populateMonths();
   bindEvents();
-  const token = localStorage.getItem(SESSION_KEY);
-  if (!token) return showPublic();
-  try {
-    await loadAccount();
-    showDashboard();
-  } catch {
-    localStorage.removeItem(SESSION_KEY);
-    showPublic();
-  }
+  await loadPeople();
 }
 
 function bindEvents() {
-  document.querySelectorAll("[data-open-auth]").forEach((button) =>
-    button.addEventListener("click", () => openAuth(button.dataset.openAuth))
-  );
-  document.querySelectorAll("[data-close-dialog]").forEach((button) =>
-    button.addEventListener("click", () => button.closest("dialog").close())
-  );
-  document.querySelectorAll("[data-panel]").forEach((button) =>
-    button.addEventListener("click", () => openPanel(button.dataset.panel))
-  );
-  $("#auth-switch").addEventListener("click", () =>
-    openAuth(els.authForm.dataset.mode === "login" ? "register" : "login")
-  );
-  els.authForm.addEventListener("submit", submitAuth);
-  $("#logout-button").addEventListener("click", logout);
+  $("#search-button").addEventListener("click", searchPeople);
+  $("#search-name").addEventListener("input", searchPeople);
+  $("#toggle-details").addEventListener("click", () => togglePanel("details-panel", "toggle-details"));
+  $("#toggle-grandparents").addEventListener("click", () => togglePanel("grandparents-panel", "toggle-grandparents"));
+  $("#cancel-edit").addEventListener("click", resetForm);
+  $("#edit-from-warning").addEventListener("click", () => editPerson(selectedId));
   $("#degree-select").addEventListener("change", renderTree);
   $("#export-svg").addEventListener("click", exportTree);
-  $("#profile-form").addEventListener("submit", saveProfile);
+  els.form.addEventListener("submit", savePerson);
 }
 
-function populateMonths() {
-  const months = [
-    "Janeiro", "Fevereiro", "Março", "Abril", "Maio", "Junho",
-    "Julho", "Agosto", "Setembro", "Outubro", "Novembro", "Dezembro"
-  ];
-  ["profile-month", "father-month", "mother-month"].forEach((id) => {
-    const select = $(`#${id}`);
-    months.forEach((name, index) => {
-      const option = document.createElement("option");
-      option.value = String(index + 1);
-      option.textContent = name;
-      select.append(option);
-    });
-  });
-}
-
-function openAuth(mode) {
-  const register = mode === "register";
-  els.authForm.dataset.mode = mode;
-  $("#auth-register-fields").classList.toggle("hidden", !register);
-  ["auth-name", "auth-father-name", "auth-mother-name", "auth-confirm-password"].forEach((id) => {
-    $(`#${id}`).required = register;
-  });
-  $("#auth-password").autocomplete = register ? "new-password" : "current-password";
-  $("#auth-eyebrow").textContent = register ? "Comece com três nomes" : "Bem-vindo de volta";
-  $("#auth-title").textContent = register ? "Criar nova conta" : "Entrar na conta";
-  $("#auth-submit").textContent = register ? "Criar minha conta" : "Entrar";
-  $("#auth-switch").textContent = register ? "Já tenho uma conta" : "Ainda não tenho conta";
-  setStatus(els.authStatus, "");
-  if (!els.authDialog.open) els.authDialog.showModal();
-}
-
-async function submitAuth(event) {
-  event.preventDefault();
-  const mode = els.authForm.dataset.mode;
-  const email = $("#auth-email").value.trim().toLowerCase();
-  const password = $("#auth-password").value;
-  const confirmPassword = $("#auth-confirm-password").value;
-
-  if (mode === "register" && password !== confirmPassword) {
-    return setStatus(els.authStatus, "As senhas informadas não coincidem.", "error");
-  }
-
-  setStatus(els.authStatus, mode === "register" ? "Criando conta..." : "Entrando...");
+async function loadPeople() {
   try {
-    const payload = mode === "register"
-      ? {
-          fullName: $("#auth-name").value.trim(),
-          fatherName: $("#auth-father-name").value.trim(),
-          motherName: $("#auth-mother-name").value.trim(),
-          email,
-          password
-        }
-      : { email, password };
-    const result = await api(mode, payload, false);
-    localStorage.setItem(SESSION_KEY, result.token);
-    await loadAccount();
-    showDashboard();
-    els.authDialog.close();
-    els.authForm.reset();
+    const data = await api("list");
+    people = data.people;
   } catch (error) {
-    setStatus(els.authStatus, error.message, "error");
+    showToast(error.message);
   }
 }
 
-async function logout() {
-  try { await api("logout"); } catch {}
-  localStorage.removeItem(SESSION_KEY);
-  currentUser = null;
-  clearInterval(refreshTimer);
-  showPublic();
-}
-
-function showPublic() {
-  els.publicView.classList.remove("hidden");
-  els.dashboard.classList.add("hidden");
-  els.publicNav.classList.remove("hidden");
-  els.privateNav.classList.add("hidden");
-}
-
-function showDashboard() {
-  els.publicView.classList.add("hidden");
-  els.dashboard.classList.remove("hidden");
-  els.publicNav.classList.add("hidden");
-  els.privateNav.classList.remove("hidden");
-  openPanel("tree-panel");
-  renderAll();
-  clearInterval(refreshTimer);
-  refreshTimer = setInterval(() => loadAccount().catch(() => {}), 20000);
-}
-
-async function loadAccount() {
-  const data = await api("bootstrap");
-  currentUser = data.currentUser;
-  allUsers = data.users;
-  if (!els.dashboard.classList.contains("hidden")) renderAll();
-}
-
-function renderAll() {
-  if (!currentUser) return;
-  $("#sidebar-name").textContent = currentUser.fullName;
-  $("#sidebar-avatar").textContent = initials(currentUser.fullName);
-  $("#sidebar-meta").textContent = formatBirthDate(currentUser) || "Nascimento não informado";
-  renderParentSummary("father", currentUser.fatherName, currentUser.fatherMatch);
-  renderParentSummary("mother", currentUser.motherName, currentUser.motherMatch);
-  renderAmbiguities();
-  fillProfile();
-  renderTree();
-}
-
-function openPanel(id) {
-  document.querySelectorAll(".dashboard-panel").forEach((panel) =>
-    panel.classList.toggle("hidden", panel.id !== id)
-  );
-  document.querySelectorAll("[data-panel]").forEach((button) =>
-    button.classList.toggle("active", button.dataset.panel === id)
-  );
-}
-
-function renderParentSummary(role, name, match) {
-  const status = $(`#${role}-status`);
-  const detail = $(`#${role}-detail`);
-  status.textContent = name || (role === "father" ? "Não informado" : "Não informada");
-  if (!name) return detail.textContent = "";
-  if (match.status === "matched") detail.textContent = "Cadastro encontrado e conectado";
-  else if (match.status === "ambiguous") detail.textContent = `${match.candidateCount} pessoas possíveis — informe mais dados`;
-  else detail.textContent = "Perfil provisório — aguardando cadastro";
-}
-
-function renderAmbiguities() {
-  const ambiguous = [];
-  if (currentUser.fatherMatch?.status === "ambiguous") {
-    ambiguous.push(`há mais de um ${currentUser.fatherName}`);
+function searchPeople() {
+  const term = normalizeName($("#search-name").value);
+  els.results.replaceChildren();
+  if (!term) {
+    $("#search-status").textContent = "Digite um nome para consultar.";
+    return;
   }
-  if (currentUser.motherMatch?.status === "ambiguous") {
-    ambiguous.push(`há mais de uma ${currentUser.motherName}`);
+  const matches = people.filter((person) => normalizeName(person.fullName).includes(term));
+  $("#search-status").textContent = `${matches.length} ${matches.length === 1 ? "registro encontrado" : "registros encontrados"}.`;
+  if (!matches.length) {
+    els.results.innerHTML = '<div class="empty-card">Nenhuma pessoa encontrada. Você pode cadastrá-la abaixo.</div>';
+    return;
   }
-  $("#ambiguity-banner").classList.toggle("hidden", !ambiguous.length);
-  $("#ambiguity-message").textContent = ambiguous.length
-    ? `${ambiguous.join(" e ")}. Forneça mais dados do seu pai ou da sua mãe para encontrarmos a pessoa correta.`
-    : "";
+  matches.forEach((person) => els.results.append(personCard(person)));
 }
 
-function fillProfile() {
-  const values = {
-    "profile-name": currentUser.fullName,
-    "profile-year": currentUser.birthYear,
-    "profile-month": currentUser.birthMonth,
-    "profile-day": currentUser.birthDay,
-    "profile-document": currentUser.document,
-    "profile-email": currentUser.email,
-    "father-name": currentUser.fatherName,
-    "father-year": currentUser.fatherBirthYear,
-    "father-month": currentUser.fatherBirthMonth,
-    "father-day": currentUser.fatherBirthDay,
-    "father-document": currentUser.fatherDocument,
-    "mother-name": currentUser.motherName,
-    "mother-year": currentUser.motherBirthYear,
-    "mother-month": currentUser.motherBirthMonth,
-    "mother-day": currentUser.motherBirthDay,
-    "mother-document": currentUser.motherDocument
-  };
-  Object.entries(values).forEach(([id, value]) => { $(`#${id}`).value = value || ""; });
+function personCard(person) {
+  const article = document.createElement("article");
+  article.className = "person-result-card";
+  article.innerHTML = `
+    <div><strong>${escapeHtml(person.fullName)}</strong>
+      <span>${birthLabel(person.birthDate)} · Pai: ${escapeHtml(person.fatherName)} · Mãe: ${escapeHtml(person.motherName)}</span>
+    </div>
+    <div class="result-actions">
+      <button class="button button-secondary button-small view">Ver árvore</button>
+      <button class="button button-ghost button-small edit">Editar</button>
+    </div>`;
+  article.querySelector(".view").addEventListener("click", () => selectPerson(person.id));
+  article.querySelector(".edit").addEventListener("click", () => editPerson(person.id));
+  return article;
 }
 
-async function saveProfile(event) {
+function togglePanel(panelId, buttonId, forceOpen = null) {
+  const panel = $(`#${panelId}`);
+  const button = $(`#${buttonId}`);
+  const open = forceOpen === null ? panel.classList.contains("hidden") : forceOpen;
+  panel.classList.toggle("hidden", !open);
+  button.setAttribute("aria-expanded", String(open));
+  button.querySelector(":scope > span").textContent = open ? "−" : "＋";
+}
+
+async function savePerson(event) {
   event.preventDefault();
-  const payload = {
-    fullName: $("#profile-name").value.trim(),
-    birthYear: optionalNumber("#profile-year"),
-    birthMonth: optionalNumber("#profile-month"),
-    birthDay: optionalNumber("#profile-day"),
-    document: $("#profile-document").value.trim(),
+  const payload = formPayload();
+  try {
+    setStatus("Salvando e recalculando conexões...");
+    const id = $("#record-id").value;
+    const result = await api(id ? "update" : "create", { ...payload, id });
+    await loadPeople();
+    resetForm();
+    setStatus("Pessoa salva com sucesso.", "success");
+    showToast("Registro salvo e árvore recalculada.");
+    selectPerson(result.id);
+  } catch (error) {
+    setStatus(error.message, "error");
+  }
+}
+
+function formPayload() {
+  return {
+    fullName: $("#person-name").value.trim(),
     fatherName: $("#father-name").value.trim(),
-    fatherBirthYear: optionalNumber("#father-year"),
-    fatherBirthMonth: optionalNumber("#father-month"),
-    fatherBirthDay: optionalNumber("#father-day"),
-    fatherDocument: $("#father-document").value.trim(),
     motherName: $("#mother-name").value.trim(),
-    motherBirthYear: optionalNumber("#mother-year"),
-    motherBirthMonth: optionalNumber("#mother-month"),
-    motherBirthDay: optionalNumber("#mother-day"),
-    motherDocument: $("#mother-document").value.trim()
+    birthDate: $("#person-birth-date").value,
+    fatherBirthDate: $("#father-birth-date").value,
+    motherBirthDate: $("#mother-birth-date").value,
+    paternalGrandfatherName: $("#paternal-grandfather").value.trim(),
+    paternalGrandmotherName: $("#paternal-grandmother").value.trim(),
+    maternalGrandfatherName: $("#maternal-grandfather").value.trim(),
+    maternalGrandmotherName: $("#maternal-grandmother").value.trim()
   };
-  try {
-    setStatus($("#profile-status"), "Salvando e recalculando...");
-    await api("updateProfile", payload);
-    await loadAccount();
-    setStatus($("#profile-status"), "Dados atualizados e árvore recalculada.", "success");
-    showToast("Dados atualizados.");
-  } catch (error) {
-    setStatus($("#profile-status"), error.message, "error");
-  }
 }
 
-function buildGraph(maxDegree) {
-  const root = allUsers.find((user) => user.id === currentUser.id) || currentUser;
+function editPerson(id) {
+  const person = people.find((item) => item.id === id);
+  if (!person) return;
+  const map = {
+    "record-id": person.id, "person-name": person.fullName, "father-name": person.fatherName,
+    "mother-name": person.motherName, "person-birth-date": person.birthDate,
+    "father-birth-date": person.fatherBirthDate, "mother-birth-date": person.motherBirthDate,
+    "paternal-grandfather": person.paternalGrandfatherName,
+    "paternal-grandmother": person.paternalGrandmotherName,
+    "maternal-grandfather": person.maternalGrandfatherName,
+    "maternal-grandmother": person.maternalGrandmotherName
+  };
+  Object.entries(map).forEach(([id, value]) => { $(`#${id}`).value = value || ""; });
+  $("#form-title").textContent = `Editar ${person.fullName}`;
+  $("#cancel-edit").classList.remove("hidden");
+  const hasDetails = person.birthDate || person.fatherBirthDate || person.motherBirthDate ||
+    person.paternalGrandfatherName || person.paternalGrandmotherName ||
+    person.maternalGrandfatherName || person.maternalGrandmotherName;
+  togglePanel("details-panel", "toggle-details", Boolean(hasDetails));
+  const hasGrandparents = person.paternalGrandfatherName || person.paternalGrandmotherName ||
+    person.maternalGrandfatherName || person.maternalGrandmotherName;
+  togglePanel("grandparents-panel", "toggle-grandparents", Boolean(hasGrandparents));
+  $("#cadastrar").scrollIntoView({ behavior: "smooth" });
+}
+
+function resetForm() {
+  els.form.reset();
+  $("#record-id").value = "";
+  $("#form-title").textContent = "Cadastrar uma pessoa";
+  $("#cancel-edit").classList.add("hidden");
+  togglePanel("details-panel", "toggle-details", false);
+  togglePanel("grandparents-panel", "toggle-grandparents", false);
+}
+
+function selectPerson(id) {
+  selectedId = id;
+  const person = people.find((item) => item.id === id);
+  if (!person) return;
+  $("#tree-title").textContent = `Árvore de ${person.fullName}`;
+  els.treeSection.classList.remove("hidden");
+  renderTree();
+  els.treeSection.scrollIntoView({ behavior: "smooth" });
+}
+
+function buildGraph(root, maxDegree) {
   const nodes = new Map([[root.id, { ...root, degree: 0, kind: "person" }]]);
   const edges = [];
   const queue = [{ node: nodes.get(root.id), degree: 0 }];
@@ -260,195 +162,139 @@ function buildGraph(maxDegree) {
   while (queue.length) {
     const { node, degree } = queue.shift();
     if (degree >= maxDegree) continue;
-
     if (node.kind === "person") {
       ["father", "mother"].forEach((role) => {
-        const name = node[`${role}Name`];
         const match = node[`${role}Match`];
-        if (!name || !match) return;
-        const parentNode = parentGraphNode(role, name, match, degree + 1);
-        addGraphNode(nodes, queue, visited, parentNode, degree + 1);
-        edges.push({ from: node.id, to: parentNode.id });
+        if (!match) return;
+        const parent = parentNode(node, role, match, degree + 1);
+        addNode(parent, degree + 1);
+        edges.push({ from: node.id, to: parent.id });
       });
-
-      allUsers.forEach((child) => {
+      people.forEach((child) => {
         ["father", "mother"].forEach((role) => {
           const match = child[`${role}Match`];
-          if (match?.status === "matched" && match.userId === node.id) {
+          if (match?.status === "matched" && match.personId === node.id) {
             const childNode = { ...child, degree: degree + 1, kind: "person" };
-            addGraphNode(nodes, queue, visited, childNode, degree + 1);
+            addNode(childNode, degree + 1);
             edges.push({ from: child.id, to: node.id });
           }
         });
       });
     } else {
-      allUsers.forEach((child) => {
-        const role = node.role;
-        const match = child[`${role}Match`];
-        const sameProvisional = match &&
-          match.status === node.matchStatus &&
-          match.normalizedName === node.normalizedName;
-        if (sameProvisional) {
-          const childNode = { ...child, degree: degree + 1, kind: "person" };
-          addGraphNode(nodes, queue, visited, childNode, degree + 1);
-          edges.push({ from: child.id, to: node.id });
-        }
+      people.forEach((child) => {
+        ["father", "mother"].forEach((role) => {
+          const match = child[`${role}Match`];
+          if (match?.status === node.status && match.fingerprint === node.fingerprint) {
+            const childNode = { ...child, degree: degree + 1, kind: "person" };
+            addNode(childNode, degree + 1);
+            edges.push({ from: child.id, to: node.id });
+          }
+        });
       });
     }
   }
   return { nodes: [...nodes.values()], edges: uniqueEdges(edges) };
+
+  function addNode(node, degree) {
+    if (!nodes.has(node.id)) nodes.set(node.id, node);
+    if (!visited.has(node.id)) {
+      visited.add(node.id);
+      queue.push({ node, degree });
+    }
+  }
 }
 
-function parentGraphNode(role, name, match, degree) {
+function parentNode(child, role, match, degree) {
   if (match.status === "matched") {
-    const person = allUsers.find((user) => user.id === match.userId);
+    const person = people.find((item) => item.id === match.personId);
     if (person) return { ...person, degree, kind: "person" };
   }
   return {
-    id: `${match.status}:${role}:${match.normalizedName}`,
-    fullName: name,
-    degree,
-    kind: "placeholder",
-    role,
-    matchStatus: match.status,
-    normalizedName: match.normalizedName,
-    candidateCount: match.candidateCount || 0
+    id: `${match.status}:${match.fingerprint}`,
+    fullName: child[`${role}Name`],
+    degree, kind: "placeholder", status: match.status,
+    fingerprint: match.fingerprint, candidateCount: match.candidateCount || 0
   };
 }
 
-function addGraphNode(nodes, queue, visited, node, degree) {
-  if (!nodes.has(node.id)) nodes.set(node.id, node);
-  if (!visited.has(node.id)) {
-    visited.add(node.id);
-    queue.push({ node, degree });
-  }
+function renderTree() {
+  const root = people.find((item) => item.id === selectedId);
+  if (!root) return;
+  const graph = buildGraph(root, Number($("#degree-select").value));
+  const ambiguous = graph.nodes.filter((node) => node.kind === "placeholder" && node.status === "ambiguous");
+  $("#ambiguity-banner").classList.toggle("hidden", !ambiguous.length);
+  $("#ambiguity-message").textContent = ambiguous.length
+    ? `Encontramos mais de uma pessoa possível para ${ambiguous.map((node) => node.fullName).join(", ")}. Adicione datas ou nomes dos avós para melhorar a correspondência.`
+    : "";
+  els.treeEmpty.classList.toggle("hidden", graph.nodes.length > 1);
+  drawGraph(graph, root.id);
 }
 
-function renderTree() {
-  if (!currentUser) return;
-  const graph = buildGraph(Number($("#degree-select").value));
-  els.treeEmpty.classList.toggle("hidden", graph.nodes.length > 1);
+function drawGraph(graph, rootId) {
   const levels = new Map();
   graph.nodes.forEach((node) => {
     if (!levels.has(node.degree)) levels.set(node.degree, []);
     levels.get(node.degree).push(node);
   });
-  const maxWidth = Math.max(...[...levels.values()].map((items) => items.length), 1);
-  const width = Math.max(900, maxWidth * 190 + 120);
+  const widest = Math.max(...[...levels.values()].map((items) => items.length), 1);
+  const width = Math.max(900, widest * 190 + 120);
   const height = Math.max(540, levels.size * 165 + 90);
   els.treeSvg.setAttribute("viewBox", `0 0 ${width} ${height}`);
-  els.treeSvg.setAttribute("width", width);
-  els.treeSvg.setAttribute("height", height);
+  els.treeSvg.setAttribute("width", width); els.treeSvg.setAttribute("height", height);
   const positions = new Map();
   [...levels.entries()].sort(([a], [b]) => a - b).forEach(([level, items]) => {
     const spacing = width / (items.length + 1);
     items.forEach((node, index) => positions.set(node.id, { x: spacing * (index + 1), y: 85 + level * 155 }));
   });
-  const edges = graph.edges.map((edge) => {
+  const edgeMarkup = graph.edges.map((edge) => {
     const a = positions.get(edge.from), b = positions.get(edge.to);
-    if (!a || !b) return "";
-    return `<path class="tree-edge" d="M${a.x},${a.y + 48} C${a.x},${(a.y + b.y) / 2} ${b.x},${(a.y + b.y) / 2} ${b.x},${b.y - 48}"/>`;
+    return a && b ? `<path class="tree-edge" d="M${a.x},${a.y + 48} C${a.x},${(a.y + b.y) / 2} ${b.x},${(a.y + b.y) / 2} ${b.x},${b.y - 48}"/>` : "";
   }).join("");
-  const nodes = graph.nodes.map((node) => {
-    const position = positions.get(node.id);
+  const nodeMarkup = graph.nodes.map((node) => {
+    const p = positions.get(node.id);
     if (node.kind === "placeholder") {
-      const ambiguous = node.matchStatus === "ambiguous";
-      const message = ambiguous
-        ? `Há ${node.candidateCount} pessoas com este nome. Forneça mais dados.`
-        : "Esta pessoa ainda não possui cadastro.";
-      return `<g class="tree-node placeholder${ambiguous ? " ambiguous" : ""}" transform="translate(${position.x},${position.y})">
-        <rect x="-68" y="-45" width="136" height="90" rx="16"/>
-        <text class="question-mark" y="-13">?</text>
+      const ambiguous = node.status === "ambiguous";
+      return `<g class="tree-node placeholder${ambiguous ? " ambiguous" : ""}" transform="translate(${p.x},${p.y})">
+        <rect x="-68" y="-45" width="136" height="90" rx="16"/><text class="question-mark" y="-13">?</text>
         <text class="node-name" y="8">${escapeHtml(shortName(node.fullName))}</text>
-        <text class="node-meta" y="27">${ambiguous ? "Mais dados necessários" : "Perfil provisório"}</text>
-        <title>${escapeHtml(message)}</title>
-      </g>`;
+        <text class="node-meta" y="27">${ambiguous ? `${node.candidateCount} possibilidades` : "Ainda não cadastrado"}</text></g>`;
     }
-    return `<g class="tree-node${node.id === currentUser.id ? " focus" : ""}" transform="translate(${position.x},${position.y})">
+    return `<g class="tree-node${node.id === rootId ? " focus" : ""}" transform="translate(${p.x},${p.y})">
       <circle r="54"/><text class="node-name" y="-4">${escapeHtml(shortName(node.fullName))}</text>
-      <text class="node-meta" y="17">${escapeHtml(formatBirthDate(node) || "Data não informada")}</text>
-      <title>${escapeHtml(node.fullName)}</title></g>`;
+      <text class="node-meta" y="17">${birthLabel(node.birthDate)}</text></g>`;
   }).join("");
-  els.treeSvg.innerHTML = edges + nodes;
+  els.treeSvg.innerHTML = edgeMarkup + nodeMarkup;
 }
 
 function exportTree() {
-  if (!els.treeSvg.innerHTML) return showToast("Não há árvore para exportar.");
+  if (!els.treeSvg.innerHTML) return showToast("Gere uma árvore antes de exportar.");
   const clone = els.treeSvg.cloneNode(true);
   clone.setAttribute("xmlns", "http://www.w3.org/2000/svg");
   const style = document.createElementNS("http://www.w3.org/2000/svg", "style");
   style.textContent = `.tree-edge{fill:none;stroke:#9cb7ac;stroke-width:1.5}.tree-node circle{fill:#fff;stroke:#175244;stroke-width:3}.tree-node.focus circle{fill:#175244}.tree-node rect{fill:#f7f3e9;stroke:#ca9650;stroke-width:2;stroke-dasharray:5 4}.tree-node text{font-family:Arial;text-anchor:middle;fill:#173f35}.tree-node.focus text{fill:white}.node-name{font-size:12px;font-weight:bold}.node-meta{font-size:9px}.question-mark{font-size:17px;font-weight:bold}`;
   clone.prepend(style);
   const url = URL.createObjectURL(new Blob([new XMLSerializer().serializeToString(clone)], { type: "image/svg+xml" }));
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `arthuvore-${slugify(currentUser.fullName)}.svg`;
-  link.click();
-  URL.revokeObjectURL(url);
+  const link = document.createElement("a"); link.href = url; link.download = "arthuvore.svg"; link.click(); URL.revokeObjectURL(url);
 }
 
-async function api(action, payload = {}, authenticated = true) {
-  const token = authenticated ? localStorage.getItem(SESSION_KEY) : "";
+async function api(action, payload = {}) {
   const response = await fetch(API_URL, {
-    method: "POST",
-    headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action, token, payload })
+    method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action, payload })
   });
   const result = await response.json();
   if (!result.ok) throw new Error(result.error || "Não foi possível acessar o servidor.");
   return result.data;
 }
 
-function formatBirthDate(person) {
-  if (!person?.birthYear) return "";
-  if (!person.birthMonth) return String(person.birthYear);
-  const month = String(person.birthMonth).padStart(2, "0");
-  if (!person.birthDay) return `${month}/${person.birthYear}`;
-  return `${String(person.birthDay).padStart(2, "0")}/${month}/${person.birthYear}`;
+function birthLabel(date) {
+  if (!date) return "Data não informada";
+  const [year, month, day] = date.split("-");
+  return `${day}/${month}/${year}`;
 }
-
-function optionalNumber(selector) {
-  const value = $(selector).value;
-  return value === "" ? "" : Number(value);
-}
-
-function uniqueEdges(edges) {
-  const seen = new Set();
-  return edges.filter((edge) => {
-    const key = [edge.from, edge.to].sort().join("|");
-    if (seen.has(key)) return false;
-    seen.add(key);
-    return true;
-  });
-}
-
-function initials(name = "") {
-  return name.split(/\s+/).slice(0, 2).map((part) => part[0]).join("").toUpperCase();
-}
-
-function shortName(name = "") {
-  const parts = name.split(/\s+/);
-  return parts.length > 1 ? `${parts[0]} ${parts.at(-1)}` : name;
-}
-
-function slugify(value) {
-  return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().replace(/[^a-z0-9]+/g, "-");
-}
-
-function escapeHtml(value = "") {
-  const div = document.createElement("div");
-  div.textContent = value;
-  return div.innerHTML;
-}
-
-function setStatus(element, message, type = "") {
-  element.textContent = message;
-  element.className = `form-status ${type}`;
-}
-
-function showToast(message) {
-  els.toast.textContent = message;
-  els.toast.classList.add("show");
-  clearTimeout(showToast.timer);
-  showToast.timer = setTimeout(() => els.toast.classList.remove("show"), 3000);
-}
+function normalizeName(value = "") { return value.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toUpperCase().replace(/[^A-Z0-9 ]/g, " ").replace(/\s+/g, " ").trim(); }
+function shortName(name = "") { const parts = name.split(/\s+/); return parts.length > 1 ? `${parts[0]} ${parts.at(-1)}` : name; }
+function uniqueEdges(edges) { const seen = new Set(); return edges.filter((edge) => { const key = [edge.from, edge.to].sort().join("|"); if (seen.has(key)) return false; seen.add(key); return true; }); }
+function escapeHtml(value = "") { const div = document.createElement("div"); div.textContent = value; return div.innerHTML; }
+function setStatus(message, type = "") { els.status.textContent = message; els.status.className = `form-status ${type}`; }
+function showToast(message) { els.toast.textContent = message; els.toast.classList.add("show"); clearTimeout(showToast.timer); showToast.timer = setTimeout(() => els.toast.classList.remove("show"), 3000); }
