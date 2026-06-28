@@ -220,7 +220,9 @@ function parentNode(child, role, match, degree, generation) {
 function renderTree() {
   const root = people.find((item) => item.id === selectedId);
   if (!root) return;
-  const graph = buildGraph(root, Number($("#degree-select").value));
+  const degreeValue = $("#degree-select").value;
+  const maxDegree = degreeValue === "all" ? Infinity : Number(degreeValue);
+  const graph = buildGraph(root, maxDegree);
   const ambiguous = graph.nodes.filter((node) => node.kind === "placeholder" && node.status === "ambiguous");
   $("#ambiguity-banner").classList.toggle("hidden", !ambiguous.length);
   $("#ambiguity-message").textContent = ambiguous.length
